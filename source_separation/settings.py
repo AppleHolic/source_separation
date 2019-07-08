@@ -8,6 +8,7 @@ def spec_unet_base():
         'hidden_dim': 256,
         'filter_len': 1024,
         'hop_len': 256,
+        'block_layers': 4,
         'layers': 4,
         'kernel_size': 5,
         'is_mask': True,

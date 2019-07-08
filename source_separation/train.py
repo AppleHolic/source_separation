@@ -5,15 +5,16 @@ import torch.nn as nn
 from typing import Tuple
 from pytorch_sound.data.meta.voice_bank import get_datasets
 from pytorch_sound.models import build_model
+from pytorch_sound import settings
 from source_separation.trainer import Wave2WaveTrainer
 
 
 def main(meta_dir: str, save_dir: str,
          save_prefix: str = '', pretrained_path: str = '',
-         model_name: str = '', batch_size: int = 64, num_workers: int = 8,
-         lr: float = 1e-4, betas: Tuple[float] = (0.9, 0.999), weight_decay: float = 0.0,
-         max_step: int = 10000, valid_max_step: int = 30, save_interval: int = 1000, log_interval: int = 100,
-         grad_clip: float = 0.0, grad_norm: float = 0.0):
+         model_name: str = '', batch_size: int = 16, num_workers: int = 16, fix_len: float = 2.0,
+         lr: float = 1e-3, betas: Tuple[float] = (0.9, 0.999), weight_decay: float = 0.0,
+         max_step: int = 200000, valid_max_step: int = 30, save_interval: int = 1000, log_interval: int = 100,
+         grad_clip: float = 0.0, grad_norm: float = 10.0):
     # check args
     assert os.path.exists(meta_dir)
 
@@ -29,7 +30,8 @@ def main(meta_dir: str, save_dir: str,
 
     # load dataset
     train_loader, valid_loader = get_datasets(
-        meta_dir, batch_size=batch_size, num_workers=num_workers, audio_mask=True
+        meta_dir, batch_size=batch_size, num_workers=num_workers,
+        fix_len=int(fix_len * settings.SAMPLE_RATE), audio_mask=True
     )
 
     # train

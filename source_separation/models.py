@@ -14,7 +14,7 @@ class ComplexConvBlock(nn.Module):
     Convolution block
     """
 
-    def __init__(self, in_channels: int, out_channels: int, kernel_size: int, padding: int = 0, layers: int = 3,
+    def __init__(self, in_channels: int, out_channels: int, kernel_size: int, padding: int = 0, layers: int = 4,
                  bn_func=nn.BatchNorm1d, act_func=nn.LeakyReLU):
         super().__init__()
         # modules
@@ -22,7 +22,6 @@ class ComplexConvBlock(nn.Module):
 
         for idx in range(layers):
             in_ = in_channels if idx == 0 else out_channels
-
             self.blocks.append(
                 nn.Sequential(*[
                     bn_func(in_),
@@ -47,7 +46,6 @@ class OutAct(nn.Module):
     def forward(self, x):
         mag, phase = x.chunk(2, 1)
         mag = torch.tanh(mag)
-        phase = torch.atan_(phase) * 2
         return torch.cat([mag, phase], dim=1)
 
 
@@ -55,7 +53,7 @@ class OutAct(nn.Module):
 class SpectrogramUnet(nn.Module):
 
     def __init__(self, spec_dim: int, hidden_dim: int, filter_len: int, hop_len: int, layers: int = 3,
-                 kernel_size: int = 5, is_mask: bool = False, norm: str = 'bn'):
+                 block_layers: int = 3, kernel_size: int = 5, is_mask: bool = False, norm: str = 'bn'):
         super().__init__()
         self.layers = layers
         self.is_mask = is_mask
@@ -75,10 +73,10 @@ class SpectrogramUnet(nn.Module):
 
         # down
         self.down = nn.ModuleList()
-        self.down_pool = nn.MaxPool1d(3, stride=2, padding=1)
+        self.down_pool = nn.AvgPool1d(3, stride=2, padding=1)
         for idx in range(self.layers):
             block = ComplexConvBlock(hidden_dim, hidden_dim, kernel_size=kernel_size, padding=kernel_size // 2,
-                                     bn_func=bn_func, act_func=nn.Tanh)
+                                     bn_func=bn_func, act_func=nn.Tanh, layers=block_layers)
             self.down.append(block)
 
         # up
@@ -88,10 +86,10 @@ class SpectrogramUnet(nn.Module):
             self.up.append(
                 nn.Sequential(
                     ComplexConvBlock(in_c, hidden_dim, kernel_size=kernel_size, padding=kernel_size // 2,
-                                     bn_func=bn_func, act_func=nn.LeakyReLU),
+                                     bn_func=bn_func, act_func=nn.Tanh, layers=block_layers),
                     bn_func(hidden_dim),
                     nn.Tanh(),
-                    ComplexTransposedConv1d(hidden_dim, hidden_dim, kernel_size=kernel_size, stride=2),
+                    ComplexTransposedConv1d(hidden_dim, hidden_dim, kernel_size=2, stride=2),
                 )
             )
 
@@ -99,8 +97,8 @@ class SpectrogramUnet(nn.Module):
         self.spec_conv = nn.Sequential(
             bn_func(hidden_dim * 2),
             nn.Tanh(),
-            ComplexConv1d(hidden_dim * 2, spec_dim * 2, 1),
-            OutAct()
+            ComplexConv1d(hidden_dim * 2, spec_dim * 2, 1)
+            # OutAct()
         )
 
     def log_stft(self, wav):
@@ -121,16 +119,6 @@ class SpectrogramUnet(nn.Module):
         if size_diff > 0:
             x = F.pad(x.unsqueeze(1), (size_diff // 2, size_diff // 2), 'reflect').squeeze(1)
         return x
-
-    def masking(self, origin_mag, origin_phase, mag, phase):
-        abs_mag = torch.abs(mag)
-        mag_mask = torch.tanh(abs_mag)
-        phase_mask = mag / torch.abs(abs_mag)
-
-        # masking
-        mag = mag_mask * origin_mag
-        phase = phase_mask * (origin_phase + phase)
-        return mag, phase
 
     def forward(self, wav):
         # stft
@@ -164,7 +152,7 @@ class SpectrogramUnet(nn.Module):
         if self.is_mask:
             abs_mag = torch.abs(mag)
             mag_mask = torch.tanh(abs_mag)
-            phase_mask = mag / torch.abs(abs_mag)
+            phase_mask = mag / abs_mag
 
             # masking
             mag = mag_mask * origin_mag

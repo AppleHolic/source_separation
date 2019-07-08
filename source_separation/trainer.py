@@ -1,7 +1,6 @@
 import torch
 from typing import Tuple, Dict
 from pytorch_sound.trainer import Trainer, LogType
-from pytorch_sound.utils.tensor import to_numpy
 
 
 class Wave2WaveTrainer(Trainer):
