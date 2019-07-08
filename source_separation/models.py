@@ -41,14 +41,6 @@ class ComplexConvBlock(nn.Module):
             return x + temp
 
 
-class OutAct(nn.Module):
-
-    def forward(self, x):
-        mag, phase = x.chunk(2, 1)
-        mag = torch.tanh(mag)
-        return torch.cat([mag, phase], dim=1)
-
-
 @register_model('spectrogram_unet')
 class SpectrogramUnet(nn.Module):
 
@@ -98,7 +90,6 @@ class SpectrogramUnet(nn.Module):
             bn_func(hidden_dim * 2),
             nn.Tanh(),
             ComplexConv1d(hidden_dim * 2, spec_dim * 2, 1)
-            # OutAct()
         )
 
     def log_stft(self, wav):
