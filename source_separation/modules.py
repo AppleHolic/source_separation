@@ -41,12 +41,12 @@ class _ComplexConvNd(nn.Module):
         fan_in, _ = nn.init._calculate_fan_in_and_fan_out(self.A)
 
         # init A
-        gain = calculate_gain('tanh', 0)
+        gain = calculate_gain('leaky_relu', 0)
         std = gain / np.sqrt(fan_in)
         bound = np.sqrt(3.0) * std
 
         with torch.no_grad():
-            self.A.uniform_(-bound, bound)
+            self.A.uniform_(-bound * (1 / (np.pi ** 2)), bound * (1 / (np.pi ** 2)))
             #
             # B is initialized by pi
             # -pi and pi is too big, so it is powed by -1
@@ -223,15 +223,7 @@ class ComplexActLayer(nn.Module):
     In implemented DCUnet on this repository, Real part is activated to log space.
     And Phase(img) part, it is distributed in [-pi, pi]...
     """
-    def __init__(self, is_out=False, sigma=6.):
-        super().__init__()
-        self.is_out = is_out
-        # self.act_pi = np.pi / (np.arctan(sigma) * 2)
 
     def forward(self, x):
-        real, img = torch.split(x, x.size(1) // 2, dim=1)
+        real, img = x.chunk(2, 1)
         return torch.cat([F.leaky_relu_(real), torch.atan_(img) * 2], dim=1)
-        # if self.is_out:
-        #     return torch.cat([F.leaky_relu_(real), torch.atan_(img * self.act_pi) * 2], dim=1)
-        # else:
-        #     return torch.cat([F.leaky_relu_(real), torch.atan_(img) * 2], dim=1)

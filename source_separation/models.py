@@ -6,7 +6,7 @@ from pytorch_sound.models import register_model
 from pytorch_sound.utils.tensor import concat_complex
 from pytorch_sound.models.transforms import STFT
 
-from source_separation.modules import ComplexConv1d, ComplexTransposedConv1d, AttentionLayer, ComplexActLayer
+from source_separation.modules import ComplexConv1d, ComplexTransposedConv1d, ComplexActLayer
 
 
 class ComplexConvBlock(nn.Module):
@@ -15,10 +15,11 @@ class ComplexConvBlock(nn.Module):
     """
 
     def __init__(self, in_channels: int, out_channels: int, kernel_size: int, padding: int = 0, layers: int = 4,
-                 bn_func=nn.BatchNorm1d, act_func=nn.LeakyReLU):
+                 bn_func=nn.BatchNorm1d, act_func=nn.LeakyReLU, skip_res: bool = False):
         super().__init__()
         # modules
         self.blocks = nn.ModuleList()
+        self.skip_res = skip_res
 
         for idx in range(layers):
             in_ = in_channels if idx == 0 else out_channels
@@ -35,7 +36,7 @@ class ComplexConvBlock(nn.Module):
         for idx, block in enumerate(self.blocks):
             x = block(x)
 
-        if temp.size() != x.size():
+        if temp.size() != x.size() or self.skip_res:
             return x
         else:
             return x + temp
@@ -56,16 +57,14 @@ class SpectrogramUnet(nn.Module):
         if norm == 'bn':
             self.bn_func = nn.BatchNorm1d
         elif norm == 'ins':
-            self.bn_func = lambda h: nn.InstanceNorm1d(h, affine=True)
+            self.bn_func = nn.InstanceNorm1d
         else:
             raise NotImplementedError('{} is not implemented !'.format(norm))
 
         if act == 'tanh':
             self.act_func = nn.Tanh
-            self.act_out = None
         elif act == 'comp':
             self.act_func = ComplexActLayer
-            self.act_out = ComplexActLayer(is_out=True)
         else:
             raise NotImplementedError('{} is not implemented !'.format(act))
 
@@ -95,18 +94,11 @@ class SpectrogramUnet(nn.Module):
             )
 
         # out_conv
-        self.spec_conv = nn.Sequential(
+        self.out_conv = nn.Sequential(
+            ComplexConvBlock(hidden_dim * 2, hidden_dim * 2, kernel_size=kernel_size,
+                             padding=kernel_size // 2, bn_func=self.bn_func, act_func=self.act_func),
             self.bn_func(hidden_dim * 2),
-            self.act_func(),
             ComplexConv1d(hidden_dim * 2, spec_dim * 2, 1)
-        )
-
-        # refine conv
-        self.refine_conv = nn.Sequential(
-            ComplexConvBlock(spec_dim * 4, spec_dim * 2, kernel_size=kernel_size, padding=kernel_size // 2,
-                             bn_func=self.bn_func,
-                             act_func=self.act_func),
-            self.bn_func(spec_dim * 2)
         )
 
     def log_stft(self, wav):
@@ -161,24 +153,36 @@ class SpectrogramUnet(nn.Module):
             x = concat_complex(x, res, dim=1)
 
         # match spec dimension
-        raugh_x = self.spec_conv(x)
-        if origin_mag.size(2) != raugh_x.size(2):
-            raugh_x = F.interpolate(raugh_x, size=[origin_mag.size(2)], mode='linear', align_corners=False)
+        x = self.out_conv(x)
+        if origin_mag.size(2) != x.size(2):
+            x = F.interpolate(x, size=[origin_mag.size(2)], mode='linear', align_corners=False)
 
-        refine_x = self.refine_conv(concat_complex(raugh_x, origin_x, dim=1))
-        if self.act_out is not None:
-            refine_x = self.act_out(refine_x)
-
-        # to wave
         def to_wav(stft):
             mag, phase = stft.chunk(2, 1)
             if self.is_mask:
                 mag, phase = self.masking(mag, phase, origin_mag, origin_phase)
-            x = self.exp_istft(mag, phase)
-            x = self.adjust_diff(x, wav)
-            return x
+            out = self.exp_istft(mag, phase)
+            out = self.adjust_diff(out, wav)
+            return out
 
-        refine_wav = to_wav(refine_x)
-        # raugh_wav = to_wav(raugh_x)
+        refine_wav = to_wav(x)
 
         return refine_wav
+
+
+@register_model('refine_spectrogram_unet')
+class RefineSpectrogramUnet(nn.Module):
+
+    def __init__(self, spec_dim: int, hidden_dim: int, filter_len: int, hop_len: int, layers: int = 3,
+                 block_layers: int = 3, kernel_size: int = 5, is_mask: bool = False, norm: str = 'bn',
+                 act: str = 'tanh'):
+        super().__init__()
+        self.unet_1 = SpectrogramUnet(spec_dim, hidden_dim, filter_len, hop_len, layers,
+                         block_layers, kernel_size, is_mask, norm, act)
+        self.unet_2 = SpectrogramUnet(spec_dim, hidden_dim, filter_len, hop_len, layers,
+                         block_layers, kernel_size, is_mask, norm, act)
+
+    def forward(self, wav):
+        raugh_wav = self.unet_1(-wav)
+        refine_wav = self.unet_2(wav)
+        return refine_wav - raugh_wav
