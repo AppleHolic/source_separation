@@ -7,16 +7,16 @@ from pytorch_sound.data.meta import voice_bank
 from pytorch_sound.models import build_model
 from pytorch_sound import settings
 from source_separation.dataset import get_datasets
-from source_separation.trainer import Wave2WaveTrainer
+from source_separation.trainer import Wave2WaveTrainer, RefineTrainer
 
 
 def main(meta_dir: str, save_dir: str,
          save_prefix: str = '', pretrained_path: str = '',
-         model_name: str = '', batch_size: int = 16, num_workers: int = 16, fix_len: float = 2.0,
-         lr: float = 1e-3, betas: Tuple[float] = (0.9, 0.999), weight_decay: float = 0.0,
-         max_step: int = 200000, valid_max_step: int = 30, save_interval: int = 1000, log_interval: int = 100,
-         grad_clip: float = 0.0, grad_norm: float = 10.0,
-         is_audioset: bool = False):
+         model_name: str = '', batch_size: int = 64, num_workers: int = 16, fix_len: float = 2.,
+         lr: float = 1e-4, betas: Tuple[float] = (0.9, 0.999), weight_decay: float = 0.0,
+         max_step: int = 300000, valid_max_step: int = 30, save_interval: int = 1000, log_interval: int = 50,
+         grad_clip: float = 0.0, grad_norm: float = 30.0,
+         is_audioset: bool = False, is_refine: bool = False):
     # check args
     assert os.path.exists(meta_dir)
 
@@ -40,8 +40,13 @@ def main(meta_dir: str, save_dir: str,
         fix_len=int(fix_len * settings.SAMPLE_RATE), audio_mask=True
     )
 
+    if is_refine:
+        trainer_cls = RefineTrainer
+    else:
+        trainer_cls = Wave2WaveTrainer
+
     # train
-    Wave2WaveTrainer(
+    trainer_cls(
         model, optimizer, train_loader, valid_loader,
         max_step=max_step, valid_max_step=valid_max_step, save_interval=save_interval, log_interval=log_interval,
         save_dir=save_dir, save_prefix=save_prefix, grad_clip=grad_clip, grad_norm=grad_norm,

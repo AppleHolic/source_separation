@@ -128,3 +128,110 @@ class ComplexTransposedConv1d(_ComplexConvNd):
             idea_part = F.pad(idea_part, (self.output_padding, self.output_padding), 'reflect')
 
         return real_part + idea_part
+
+
+class MultiHeadAttention(nn.Module):
+
+    def __init__(self, hidden_dim=256, heads=4, dropout_rate=0.2):
+        super(MultiHeadAttention, self).__init__()
+        self.hidden_dim = hidden_dim
+        self.heads = heads
+
+        # linear projection layers
+        self.linear_kvq = nn.Conv1d(self.hidden_dim, self.hidden_dim * 3, 1, bias=False)
+        self.linear = nn.Conv1d(self.hidden_dim,  self.hidden_dim, 1, bias=False)
+
+        # dropout layer
+        self.dout = nn.Dropout(dropout_rate)
+
+    def forward(self, input):
+        # TODO: for att_mask
+        # linear and split k, v, q
+        k, v, q = self.linear_kvq(input).chunk(3, 1)
+        k, v, q = [torch.cat(x.chunk(self.heads, 1), dim=0) for x in [k, v, q]]
+
+        # do attention at once
+        x, att = self.scale_dot_att(k, v, q, None)
+        x = torch.cat(x.chunk(self.heads, 0), dim=1)
+
+        x = self.linear(x)
+
+        # dropout
+        x = self.dout(x)
+
+        # add & norm
+        return input + x, att
+
+    @staticmethod
+    def scale_dot_att(k, v, q, att_mask):
+
+        # matmul and scale
+        att = torch.bmm(k.transpose(1, 2), q) / (k.size(1)**0.5)
+
+        # apply mask
+        if att_mask is not None:
+            att_mask = att_mask.unsqueeze(1)
+            att.data.masked_fill_(att_mask.transpose(1, 2).data, -float('inf'))
+
+        # apply softmax
+        att = F.softmax(att, 1)
+        if att_mask is not None:
+            att.data.masked_fill_(att_mask.data, 0)
+
+        # apply attention
+        return torch.bmm(v, att), att
+
+
+class PointwiseFeedForward(nn.Module):
+
+    def __init__(self, hidden_dim=256, dropout_rate=0.0):
+        super(PointwiseFeedForward, self).__init__()
+        self.hidden_dim = hidden_dim
+
+        self.ff = nn.Sequential(
+            nn.Conv1d(self.hidden_dim, self.hidden_dim * 4, 1),
+            nn.ReLU(),
+            nn.Conv1d(self.hidden_dim * 4, self.hidden_dim, 1),
+        )
+
+        self.act = nn.ReLU()
+        # self.norm = nn.BatchNorm1d(hidden_dim)
+
+        # dropout layer
+        self.dout = nn.Dropout(dropout_rate)
+
+    def forward(self, x):
+        return self.act(self.dout(self.ff(x)) + x)
+
+
+class AttentionLayer(nn.Module):
+
+    def __init__(self, hidden_dim, heads=4):
+        super().__init__()
+        self.hidden_dim = hidden_dim
+        self.heads = heads
+        self.attention = MultiHeadAttention(hidden_dim, heads)
+        self.ff = PointwiseFeedForward(hidden_dim)
+
+    def forward(self, input):
+        return self.ff(self.attention(input)[0])
+
+
+class ComplexActLayer(nn.Module):
+    """
+    Activation differently 'real' part and 'img' part
+    In implemented DCUnet on this repository, Real part is activated to log space.
+    And Phase(img) part, it is distributed in [-pi, pi]...
+    """
+    def __init__(self, is_out=False, sigma=6.):
+        super().__init__()
+        self.is_out = is_out
+        # self.act_pi = np.pi / (np.arctan(sigma) * 2)
+
+    def forward(self, x):
+        real, img = torch.split(x, x.size(1) // 2, dim=1)
+        return torch.cat([F.leaky_relu_(real), torch.atan_(img) * 2], dim=1)
+        # if self.is_out:
+        #     return torch.cat([F.leaky_relu_(real), torch.atan_(img * self.act_pi) * 2], dim=1)
+        # else:
+        #     return torch.cat([F.leaky_relu_(real), torch.atan_(img) * 2], dim=1)
