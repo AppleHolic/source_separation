@@ -33,9 +33,9 @@ def get_datasets(meta_dir: str, batch_size: int, num_workers: int,
     valid_dataset = AugmentSpeechDataset(valid_meta, fix_len=fix_len, skip_audio=skip_audio, audio_mask=audio_mask)
 
     # create data loader
-    train_loader = SpeechDataLoader(train_dataset, batch_size=batch_size,
+    train_loader = SpeechDataLoader(train_dataset, batch_size=batch_size, is_bucket=False,
                                     num_workers=num_workers, skip_last_bucket=False)
-    valid_loader = SpeechDataLoader(valid_dataset, batch_size=batch_size,
+    valid_loader = SpeechDataLoader(valid_dataset, batch_size=batch_size, is_bucket=False,
                                     num_workers=num_workers, skip_last_bucket=False)
 
     return train_loader, valid_loader

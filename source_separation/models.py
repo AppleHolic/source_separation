@@ -57,14 +57,16 @@ class SpectrogramUnet(nn.Module):
         if norm == 'bn':
             self.bn_func = nn.BatchNorm1d
         elif norm == 'ins':
-            self.bn_func = nn.InstanceNorm1d
+            self.bn_func = lambda x: nn.InstanceNorm1d(x, affine=True)
         else:
             raise NotImplementedError('{} is not implemented !'.format(norm))
 
         if act == 'tanh':
             self.act_func = nn.Tanh
+            self.act_out = nn.Tanh
         elif act == 'comp':
             self.act_func = ComplexActLayer
+            self.act_out = lambda: ComplexActLayer(is_out=True)
         else:
             raise NotImplementedError('{} is not implemented !'.format(act))
 
@@ -95,10 +97,18 @@ class SpectrogramUnet(nn.Module):
 
         # out_conv
         self.out_conv = nn.Sequential(
-            ComplexConvBlock(hidden_dim * 2, hidden_dim * 2, kernel_size=kernel_size,
+            ComplexConvBlock(hidden_dim * 2, spec_dim * 2, kernel_size=kernel_size,
                              padding=kernel_size // 2, bn_func=self.bn_func, act_func=self.act_func),
-            self.bn_func(hidden_dim * 2),
-            ComplexConv1d(hidden_dim * 2, spec_dim * 2, 1)
+            self.bn_func(spec_dim * 2),
+            self.act_func()
+        )
+
+        # refine conv
+        self.refine_conv = nn.Sequential(
+            ComplexConvBlock(spec_dim * 4, spec_dim * 2, kernel_size=kernel_size,
+                             padding=kernel_size // 2, bn_func=self.bn_func, act_func=self.act_func),
+            self.bn_func(spec_dim * 2),
+            self.act_func()
         )
 
     def log_stft(self, wav):
@@ -156,6 +166,9 @@ class SpectrogramUnet(nn.Module):
         x = self.out_conv(x)
         if origin_mag.size(2) != x.size(2):
             x = F.interpolate(x, size=[origin_mag.size(2)], mode='linear', align_corners=False)
+
+        # refine
+        x = self.refine_conv(concat_complex(x, origin_x))
 
         def to_wav(stft):
             mag, phase = stft.chunk(2, 1)
