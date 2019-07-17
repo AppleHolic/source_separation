@@ -40,35 +40,3 @@ class Wave2WaveTrainer(Trainer):
         }
 
         return loss, meta
-
-
-class RefineTrainer(Trainer):
-
-    def forward(self, noise, clean, speaker, txt, mask, is_logging: bool = False) -> Tuple[torch.Tensor, Dict]:
-        # forward
-        refine_wav, raugh_wav = self.model(noise)
-
-        # calc loss
-        raugh_loss = self.mse_loss(raugh_wav, clean, mask)
-        refine_loss = self.mse_loss(refine_wav, clean, mask)
-        loss = raugh_loss + refine_loss
-
-        meta = {
-            'loss': (loss.item(), LogType.SCALAR),
-            'rough/wav_loss': (raugh_loss.item(), LogType.SCALAR),
-            'refine/wav_loss': (refine_loss, LogType.SCALAR),
-            'clean_hat': (refine_wav[0], LogType.AUDIO),
-            'clean': (clean[0], LogType.AUDIO),
-            'noise': (noise[0], LogType.AUDIO)
-        }
-
-        return loss, meta
-
-    def mse_loss(self, clean_hat, clean, mask):
-        mask = mask[..., :clean_hat.size()[-1]]
-        wav_len = torch.sum(mask, dim=1, keepdim=True)
-        clean = clean[..., :clean_hat.size()[-1]]
-        loss = (clean_hat * mask - clean * mask) ** 2
-        # reduce
-        loss = torch.mean(torch.sum(loss, dim=1, keepdim=True) / wav_len)
-        return loss

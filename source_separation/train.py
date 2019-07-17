@@ -7,7 +7,7 @@ from pytorch_sound.data.meta import voice_bank
 from pytorch_sound.models import build_model
 from pytorch_sound import settings
 from source_separation.dataset import get_datasets
-from source_separation.trainer import Wave2WaveTrainer, RefineTrainer
+from source_separation.trainer import Wave2WaveTrainer
 
 
 def main(meta_dir: str, save_dir: str,
@@ -16,7 +16,7 @@ def main(meta_dir: str, save_dir: str,
          lr: float = 1e-4, betas: Tuple[float] = (0.5, 0.9), weight_decay: float = 0.0,
          max_step: int = 300000, valid_max_step: int = 30, save_interval: int = 1000, log_interval: int = 50,
          grad_clip: float = 0.0, grad_norm: float = 30.0,
-         is_audioset: bool = False, is_refine: bool = False):
+         is_audioset: bool = False):
     # check args
     assert os.path.exists(meta_dir)
 
@@ -40,13 +40,8 @@ def main(meta_dir: str, save_dir: str,
         fix_len=int(fix_len * settings.SAMPLE_RATE), audio_mask=True
     )
 
-    if is_refine:
-        trainer_cls = RefineTrainer
-    else:
-        trainer_cls = Wave2WaveTrainer
-
     # train
-    trainer_cls(
+    Wave2WaveTrainer(
         model, optimizer, train_loader, valid_loader,
         max_step=max_step, valid_max_step=valid_max_step, save_interval=save_interval, log_interval=log_interval,
         save_dir=save_dir, save_prefix=save_prefix, grad_clip=grad_clip, grad_norm=grad_norm,
