@@ -38,7 +38,7 @@ def wave_unet_large():
     }
 
 
-@register_model_architecture('refine_spectrogram_unet', 'refine_spectrogram_unet_1')
+@register_model_architecture('refine_spectrogram_unet', 'refine_spectrogram_unet')
 def refine_unet_comp():
     return {
         'spec_dim': 513,
