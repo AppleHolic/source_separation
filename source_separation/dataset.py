@@ -11,6 +11,11 @@ class AugmentSpeechDataset(SpeechDataset):
 
     def __getitem__(self, idx: int) -> List:
         res = super().__getitem__(idx)
+        # augmentation with -1
+        if np.random.randint(2):
+            res[0] = res[0] * -1
+            res[1] = res[1] * -1
+        # augmentation with audioset data
         if np.random.randint(2):
             res[0] = augment(res[1])
         return res

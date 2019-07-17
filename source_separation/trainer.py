@@ -18,15 +18,6 @@ class Wave2WaveTrainer(Trainer):
         # loss
         self.mse_loss = nn.MSELoss()
 
-    # def mse_loss(self, clean_hat, clean, mask):
-    #     mask = mask[..., :clean_hat.size()[-1]]
-    #     wav_len = torch.sum(mask, dim=1, keepdim=True)
-    #     clean = clean[..., :clean_hat.size()[-1]]
-    #     loss = (clean_hat * mask - clean * mask) ** 2
-    #     # reduce
-    #     loss = torch.mean(torch.sum(loss, dim=1, keepdim=True) / wav_len)
-    #     return loss
-
     def forward(self, noise, clean, speaker, txt, mask, is_logging: bool = False) -> Tuple[torch.Tensor, Dict]:
         # forward
         res = self.model(noise)

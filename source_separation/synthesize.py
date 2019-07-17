@@ -3,7 +3,6 @@ import fire
 import torch
 import librosa
 import source_separation
-from scipy.io.wavfile import read as read_wav
 from pytorch_sound import settings
 from pytorch_sound.utils.commons import get_loadable_checkpoint
 from pytorch_sound.models import build_model
@@ -11,13 +10,9 @@ from pytorch_sound.utils.calculate import volume_norm_log_torch
 
 
 def run(audio_file: str, out_path: str, model_name: str, pretrained_path: str):
-    sr, wav = read_wav(audio_file)
+    wav, sr = librosa.load(audio_file, sr=settings.SAMPLE_RATE)
     if wav.dtype != np.float32:
         wav = wav.astype(np.float32)
-
-    # resample
-    if sr != settings.SAMPLE_RATE:
-        wav = librosa.core.resample(wav, sr, settings.SAMPLE_RATE)
 
     # load model
     print('Load model ...')
@@ -40,6 +35,7 @@ def run(audio_file: str, out_path: str, model_name: str, pretrained_path: str):
     librosa.output.write_wav(out_path, out_wav, settings.SAMPLE_RATE)
 
     print('Finish !')
+
 
 if __name__ == '__main__':
     fire.Fire(run)

@@ -184,18 +184,60 @@ class SpectrogramUnet(nn.Module):
 
 
 @register_model('refine_spectrogram_unet')
-class RefineSpectrogramUnet(nn.Module):
+class RefineSpectrogramUnet(SpectrogramUnet):
 
     def __init__(self, spec_dim: int, hidden_dim: int, filter_len: int, hop_len: int, layers: int = 3,
                  block_layers: int = 3, kernel_size: int = 5, is_mask: bool = False, norm: str = 'bn',
-                 act: str = 'tanh'):
-        super().__init__()
-        self.unet_1 = SpectrogramUnet(spec_dim, hidden_dim, filter_len, hop_len, layers,
-                         block_layers, kernel_size, is_mask, norm, act)
-        self.unet_2 = SpectrogramUnet(spec_dim, hidden_dim, filter_len, hop_len, layers,
-                         block_layers, kernel_size, is_mask, norm, act)
+                 act: str = 'tanh', refine_layers: int = 2):
+        super().__init__(spec_dim, hidden_dim, filter_len, hop_len, layers, block_layers,
+                         kernel_size, is_mask, norm, act)
+        # refine conv
+        self.refine_conv = nn.ModuleList([
+            nn.Sequential(
+                ComplexConvBlock(spec_dim * 2, spec_dim * 2, kernel_size=kernel_size,
+                                 padding=kernel_size // 2, bn_func=self.bn_func, act_func=self.act_func),
+                self.bn_func(spec_dim * 2),
+                self.act_func()
+            )
+        ] * refine_layers)
 
     def forward(self, wav):
-        raugh_wav = self.unet_1(-wav)
-        refine_wav = self.unet_2(wav)
-        return refine_wav - raugh_wav
+        # stft
+        origin_mag, origin_phase = self.log_stft(wav)
+        origin_x = torch.cat([origin_mag, origin_phase], dim=1)
+
+        # prev
+        x = self.prev_conv(origin_x)
+
+        # body
+        # down
+        down_cache = []
+        for idx, block in enumerate(self.down):
+            x = block(x)
+            down_cache.append(x)
+            x = self.down_pool(x)
+
+        # up
+        for idx, block in enumerate(self.up):
+            x = block(x)
+            res = F.interpolate(down_cache[self.layers - (idx + 1)], size=[x.size()[2]], mode='linear',
+                                align_corners=False)
+            x = concat_complex(x, res, dim=1)
+
+        # match spec dimension
+        x = self.out_conv(x)
+        if origin_mag.size(2) != x.size(2):
+            x = F.interpolate(x, size=[origin_mag.size(2)], mode='linear', align_corners=False)
+
+        # refine
+        for idx, refine_module in enumerate(self.refine_conv):
+            x = refine_module(x)
+            mag, phase = x.chunk(2, 1)
+            mag, phase = self.masking(mag, phase, origin_mag, origin_phase)
+            if idx < len(self.refine_conv) - 1:
+                x = torch.cat([mag, phase], dim=1)
+
+        out = self.exp_istft(mag, phase)
+        out = self.adjust_diff(out, wav)
+
+        return out
