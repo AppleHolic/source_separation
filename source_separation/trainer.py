@@ -11,10 +11,10 @@ class Wave2WaveTrainer(Trainer):
                  max_step: int, valid_max_step: int, save_interval: int, log_interval: int,
                  save_dir: str, save_prefix: str = '',
                  grad_clip: float = 0.0, grad_norm: float = 0.0,
-                 pretrained_path: str = None):
+                 pretrained_path: str = None, scheduler: torch.optim.lr_scheduler._LRScheduler = None):
         super().__init__(model, optimizer, train_dataset, valid_dataset,
                          max_step, valid_max_step, save_interval, log_interval, save_dir, save_prefix,
-                         grad_clip, grad_norm, pretrained_path)
+                         grad_clip, grad_norm, pretrained_path, scheduler=scheduler)
         # loss
         self.mse_loss = nn.MSELoss()
 
