@@ -6,7 +6,6 @@ import source_separation
 from pytorch_sound import settings
 from pytorch_sound.utils.commons import get_loadable_checkpoint
 from pytorch_sound.models import build_model
-from pytorch_sound.utils.calculate import volume_norm_log_torch
 from pytorch_sound.utils.sound import lowpass
 from pytorch_sound.models.sound import VolNormWindow
 
@@ -29,8 +28,8 @@ def run(audio_file: str, out_path: str, model_name: str, pretrained_path: str, i
 
     # do volume norm
     if is_norm:
+        # TODO: enhancing normalizing window module
         normalizer = VolNormWindow(window_size=settings.SAMPLE_RATE // 4, target_db=settings.VN_DB)
-        # wav = volume_norm_log_torch(wav)
         wav = normalizer.forward(wav)
 
     # inference
