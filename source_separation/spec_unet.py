@@ -237,6 +237,9 @@ class RefineSpectrogramUnet(SpectrogramUnet):
             if idx < len(self.refine_conv) - 1:
                 x = torch.cat([mag, phase], dim=1)
 
+        # clamp phase
+        phase = phase.clamp(-np.pi, np.pi)
+
         out = self.exp_istft(mag, phase)
         out = self.adjust_diff(out, wav)
 

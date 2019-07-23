@@ -15,9 +15,15 @@ class AugmentSpeechDataset(SpeechDataset):
         if np.random.randint(2):
             res[0] = res[0] * -1
             res[1] = res[1] * -1
-        # augmentation with audioset data
-        if np.random.randint(2):
-            res[0] = augment(res[1])
+        # augmentation with audioset data / once on three times
+        if np.random.randint(3):
+            rand_amp = np.random.rand() * 0.5 + 0.5
+            res[0] = augment(res[1], amp=rand_amp)
+        # do volume augmentation
+        rand_vol = np.random.rand() + 0.5  # 0.5 ~ 1.5
+        res[0] = np.clip(res[0] * rand_vol, -1, 1)
+        res[1] = np.clip(res[1] * rand_vol, -1, 1)
+
         return res
 
 
