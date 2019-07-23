@@ -6,19 +6,23 @@ from typing import Tuple, Dict, Any
 from pytorch_sound.data.meta import voice_bank
 from pytorch_sound.models import build_model
 from pytorch_sound import settings
+from torch.optim.lr_scheduler import MultiStepLR
+
 from source_separation.dataset import get_datasets
 from source_separation.trainer import Wave2WaveTrainer
 
 
 def main(args: Dict[str, Any]):
-    return _main(**args)
+    save_prefix = '_'.join(['{}-{}'.format(key, val) for key, val in args.items()])
+    return _main(save_prefix=save_prefix, **args)
 
 
-def _main(model_name: str = 'spectrogram_unet_comp',   # or refine_spectrogram_unet
-         save_dir: str = 'savedir', batch_size: int = 128, num_workers: int = 16, fix_len: float = 2.,
+def _main(save_prefix: str = '',
+         model_name: str = 'spectrogram_unet_comp',   # or refine_spectrogram_unet
+         save_dir: str = 'savedir_3rdround', batch_size: int = 128, num_workers: int = 16, fix_len: float = 2.,
          lr: float = 1e-4, betas: Tuple[float] = (0.5, 0.9), weight_decay: float = 0.0,
-         max_step: int = 70000, valid_max_step: int = 30, save_interval: int = 1000, log_interval: int = 100,
-         grad_clip: float = 0.0, grad_norm: float = 30.0,
+         max_step: int = 100000, valid_max_step: int = 30, save_interval: int = 1000, log_interval: int = 100,
+         grad_clip: float = 0.0, grad_norm: float = 30.0, milestones: Tuple[int] = None, gamma: float = 0.2,
          is_audioset: bool = True,
          # model args
          hidden_dim: int = 384, filter_len: int = 1024, hop_len: int = 256,
@@ -53,6 +57,12 @@ def _main(model_name: str = 'spectrogram_unet_comp',   # or refine_spectrogram_u
     # create optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, betas=betas, weight_decay=weight_decay)
 
+    if milestones:
+        milestones = [int(x) for x in list(milestones)]
+        scheduler = MultiStepLR(optimizer, milestones, gamma=gamma)
+    else:
+        scheduler = None
+
     # load dataset
     if is_audioset:
         dataset_func = get_datasets
@@ -64,20 +74,17 @@ def _main(model_name: str = 'spectrogram_unet_comp',   # or refine_spectrogram_u
         fix_len=int(fix_len * settings.SAMPLE_RATE), audio_mask=True
     )
 
-    # model prefix
-    save_prefix = '_'.join(['{}-{}'.format(key, val) for key, val in model_args.items()])
-
     # train
     loss = Wave2WaveTrainer(
         model, optimizer, train_loader, valid_loader,
         max_step=max_step, valid_max_step=valid_max_step, save_interval=save_interval, log_interval=log_interval,
         save_dir=save_dir, save_prefix=save_prefix, grad_clip=grad_clip, grad_norm=grad_norm,
-        pretrained_path=''
+        pretrained_path='', scheduler=scheduler
     ).run()
 
     return {
         'loss': loss,
-        'ok': True
+        'status': 'ok',
     }
 
 
