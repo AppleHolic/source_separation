@@ -1,0 +1,5 @@
+torch
+librosa==0.7.0
+tqdm
+fire
+pysndfx
