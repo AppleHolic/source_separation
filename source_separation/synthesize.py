@@ -8,6 +8,7 @@ from pytorch_sound.utils.commons import get_loadable_checkpoint
 from pytorch_sound.models import build_model
 from pytorch_sound.utils.calculate import volume_norm_log_torch
 from pytorch_sound.utils.sound import lowpass
+from pytorch_sound.models.sound import VolNormWindow
 
 
 def run(audio_file: str, out_path: str, model_name: str, pretrained_path: str, is_norm: bool = True,
@@ -15,9 +16,6 @@ def run(audio_file: str, out_path: str, model_name: str, pretrained_path: str, i
     wav, sr = librosa.load(audio_file, sr=settings.SAMPLE_RATE)
     if wav.dtype != np.float32:
         wav = wav.astype(np.float32)
-
-    if lowpass_freq:
-        wav = lowpass(wav, frequency=lowpass_freq)
 
     # load model
     print('Load model ...')
@@ -31,12 +29,20 @@ def run(audio_file: str, out_path: str, model_name: str, pretrained_path: str, i
 
     # do volume norm
     if is_norm:
-        wav = volume_norm_log_torch(wav)
+        normalizer = VolNormWindow(window_size=settings.SAMPLE_RATE // 4, target_db=settings.VN_DB)
+        # wav = volume_norm_log_torch(wav)
+        wav = normalizer.forward(wav)
 
     # inference
     print('Inference ...')
     with torch.no_grad():
-        out_wav = model(wav)[0].cpu().numpy()
+        out_wav = model(wav)[0]
+        if is_norm:
+            out_wav = normalizer.reverse(out_wav)
+        out_wav = out_wav.cpu().numpy()
+
+    if lowpass_freq:
+        out_wav = lowpass(out_wav, frequency=lowpass_freq)
 
     # save wav
     librosa.output.write_wav(out_path, out_wav, settings.SAMPLE_RATE)
