@@ -83,8 +83,8 @@ class ComplexConv1d(_ComplexConvNd):
                              dilation=self.dilation, groups=2)
 
         # forward idea
-        spl = x.size(1) // 2
-        weight_B = torch.cat([self.B[:spl], self.B[spl:] * -1])
+        spl = self.in_channels // 2
+        weight_B = torch.cat([self.B[:spl].data * (-1), self.B[spl:].data])
         idea_part = F.conv1d(x, weight_B, None, stride=self.stride, padding=0,
                              dilation=self.dilation, groups=2)
 
@@ -118,8 +118,8 @@ class ComplexTransposedConv1d(_ComplexConvNd):
                                        dilation=self.dilation, groups=2)
 
         # forward idea
-        spl = x.size()[1] // 2
-        weight_B = torch.cat([self.B[:spl], self.B[spl:] * -1])
+        spl = self.out_channels // 2
+        weight_B = torch.cat([self.B[:spl] * (-1), self.B[spl:]])
         idea_part = F.conv_transpose1d(x, weight_B, None, stride=self.stride, padding=0,
                                        dilation=self.dilation, groups=2)
 
@@ -217,25 +217,6 @@ class AttentionLayer(nn.Module):
         return self.ff(self.attention(input)[0])
 
 
-# class ComplexActLayer(nn.Module):
-#     """
-#     Activation differently 'real' part and 'img' part
-#     In implemented DCUnet on this repository, Real part is activated to log space.
-#     And Phase(img) part, it is distributed in [-pi, pi]...
-#     """
-#     def __init__(self, is_out: bool = False, sigma: float = 6):
-#         super().__init__()
-#         self.is_out = is_out
-#         self.act_pi = np.pi / (np.arctan(sigma) * 2)
-#
-#     def forward(self, x):
-#         real, img = x.chunk(2, 1)
-#         real = F.leaky_relu_(real)
-#
-#         if self.is_out:
-#             return torch.cat([real, torch.atan_(img * self.act_pi) * 2], dim=1)
-#         else:
-#             return torch.cat([real, torch.atan_(img) * 2], dim=1)
 class ComplexActLayer(nn.Module):
     """
     Activation differently 'real' part and 'img' part

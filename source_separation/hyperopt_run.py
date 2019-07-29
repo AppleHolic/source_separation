@@ -19,7 +19,7 @@ def main(args: Dict[str, Any]):
 
 def _main(save_prefix: str = '',
          model_name: str = 'spectrogram_unet_comp',   # or refine_spectrogram_unet
-         save_dir: str = 'savedir_3rdround', batch_size: int = 128, num_workers: int = 16, fix_len: float = 2.,
+         save_dir: str = 'savedir', batch_size: int = 128, num_workers: int = 16, fix_len: float = 2.,
          lr: float = 1e-4, betas: Tuple[float] = (0.5, 0.9), weight_decay: float = 0.0,
          max_step: int = 100000, valid_max_step: int = 30, save_interval: int = 1000, log_interval: int = 100,
          grad_clip: float = 0.0, grad_norm: float = 30.0, milestones: Tuple[int] = None, gamma: float = 0.2,

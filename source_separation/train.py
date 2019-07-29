@@ -18,7 +18,7 @@ def main(meta_dir: str, save_dir: str,
          lr: float = 1e-4, betas: Tuple[float] = (0.5, 0.9), weight_decay: float = 0.0,
          max_step: int = 70000, valid_max_step: int = 30, save_interval: int = 1000, log_interval: int = 50,
          grad_clip: float = 0.0, grad_norm: float = 30.0,
-         is_audioset: bool = False, milestones: Tuple[int] = None, gamma: float = 0.1):
+         is_audioset: bool = True, milestones: Tuple[int] = None, gamma: float = 0.1):
     # check args
     assert os.path.exists(meta_dir)
 
