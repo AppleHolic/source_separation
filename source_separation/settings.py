@@ -17,27 +17,6 @@ def spec_unet_comp():
     }
 
 
-@register_model_architecture('wave_unet', 'wave_unet_base')
-def wave_unet_base():
-    return {
-        'hidden_dim': 128,
-        'kernel_size': 3,
-        'layers': 4,
-        'block_layers': 8
-    }
-
-
-@register_model_architecture('wave_unet', 'wave_unet_large')
-def wave_unet_large():
-    return {
-        'hidden_dim': 256,
-        'kernel_size': 3,
-        'layers': 4,
-        'block_layers': 8,
-        'dropout': 0.1,
-    }
-
-
 @register_model_architecture('refine_spectrogram_unet', 'refine_unet_base')
 def refine_unet_base():
     return {

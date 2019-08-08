@@ -186,9 +186,9 @@ class SpectrogramUnet(nn.Module):
 @register_model('refine_spectrogram_unet')
 class RefineSpectrogramUnet(SpectrogramUnet):
 
-    def __init__(self, spec_dim: int, hidden_dim: int, filter_len: int, hop_len: int, layers: int = 3,
-                 block_layers: int = 3, kernel_size: int = 5, is_mask: bool = False, norm: str = 'bn',
-                 act: str = 'tanh', refine_layers: int = 2):
+    def __init__(self, spec_dim: int, hidden_dim: int, filter_len: int, hop_len: int, layers: int = 4,
+                 block_layers: int = 4, kernel_size: int = 3, is_mask: bool = True, norm: str = 'ins',
+                 act: str = 'comp', refine_layers: int = 1):
         super().__init__(spec_dim, hidden_dim, filter_len, hop_len, layers, block_layers,
                          kernel_size, is_mask, norm, act)
         # refine conv

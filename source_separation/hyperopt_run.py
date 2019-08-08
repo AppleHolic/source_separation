@@ -1,5 +1,4 @@
 import fire
-import json
 import torch
 import torch.nn as nn
 from typing import Tuple, Dict, Any
@@ -17,7 +16,8 @@ def main(args: Dict[str, Any]):
     return _main(save_prefix=save_prefix, **args)
 
 
-def _main(save_prefix: str = '',
+def _main(meta_dir: str,
+         save_prefix: str = '',
          model_name: str = 'spectrogram_unet_comp',   # or refine_spectrogram_unet
          save_dir: str = 'savedir', batch_size: int = 128, num_workers: int = 16, fix_len: float = 2.,
          lr: float = 1e-4, betas: Tuple[float] = (0.5, 0.9), weight_decay: float = 0.0,
@@ -28,12 +28,6 @@ def _main(save_prefix: str = '',
          hidden_dim: int = 384, filter_len: int = 1024, hop_len: int = 256,
          block_layers: int = 4, layers: int = 5, kernel_size: int = 3, norm: str = 'bn', refine_layers: int = 1,
          ):
-    # check args
-    config_path = '../assets/config.json'
-    with open(config_path, 'r') as r:
-        configs = json.load(r)
-        meta_dir = configs['meta_dir']
-
     # setup model args
     model_args = {
         'hidden_dim': hidden_dim,

@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 from typing import Tuple, Dict
+
+from pytorch_sound.models.sound import InversePreEmphasis
 from pytorch_sound.trainer import Trainer, LogType
 
 
@@ -17,6 +19,11 @@ class Wave2WaveTrainer(Trainer):
                          grad_clip, grad_norm, pretrained_path, scheduler=scheduler)
         # loss
         self.mse_loss = nn.MSELoss()
+        # pytorch inverse preemphasis module
+        self.inv_preemp = InversePreEmphasis().cuda()
+
+    def l1_loss(self, clean_hat, clean):
+        return torch.abs(clean_hat - clean).mean()
 
     def forward(self, noise, clean, speaker, txt, mask, is_logging: bool = False) -> Tuple[torch.Tensor, Dict]:
         # forward
@@ -27,16 +34,24 @@ class Wave2WaveTrainer(Trainer):
             clean_hat = res
 
         # calc loss
-        loss = self.mse_loss(clean_hat, clean[..., :clean_hat.size(-1)])
+        # loss = self.mse_loss(clean_hat, clean[..., :clean_hat.size(-1)])
+        loss = self.l1_loss(clean_hat, clean[..., :clean_hat.size(-1)])
 
-        meta = {
-            'loss': (loss.item(), LogType.SCALAR),
-            'clean_hat.audio': (clean_hat[0], LogType.AUDIO),
-            'clean.audio': (clean[0], LogType.AUDIO),
-            'noise.audio': (noise[0], LogType.AUDIO),
-            'clean_hat.plot': (clean_hat[0], LogType.PLOT),
-            'clean.plot': (clean[0], LogType.PLOT),
-            'noise.plot': (noise[0], LogType.PLOT),
-        }
+        if is_logging:
+            inf = torch.cat([clean_hat[:1], clean[:1], noise[:1]], dim=0).unsqueeze(1)
+            inf = self.inv_preemp(inf).squeeze(1)
+            clean_hat, clean, noise = map(lambda x: x.squeeze(), inf.chunk(3, 0))
+
+            meta = {
+                'loss': (loss.item(), LogType.SCALAR),
+                'clean_hat.audio': (clean_hat, LogType.AUDIO),
+                'clean.audio': (clean, LogType.AUDIO),
+                'noise.audio': (noise, LogType.AUDIO),
+                'clean_hat.plot': (clean_hat, LogType.PLOT),
+                'clean.plot': (clean, LogType.PLOT),
+                'noise.plot': (noise, LogType.PLOT),
+            }
+        else:
+            meta = {}
 
         return loss, meta

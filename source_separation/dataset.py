@@ -1,15 +1,16 @@
 import numpy as np
 import os
 from audioset_augmentor.augmentor import augment
-from typing import List, Tuple
+from typing import List, Tuple, Any
 
 from pytorch_sound.data.meta.voice_bank import VoiceBankMeta
 from pytorch_sound.data.dataset import SpeechDataset, SpeechDataLoader
+from pytorch_sound.utils.sound import preemphasis
 
 
 class AugmentSpeechDataset(SpeechDataset):
 
-    def __getitem__(self, idx: int) -> List:
+    def __getitem__(self, idx: int) -> List[Any]:
         res = super().__getitem__(idx)
         # augmentation with -1
         if np.random.randint(2):
@@ -23,7 +24,9 @@ class AugmentSpeechDataset(SpeechDataset):
         rand_vol = np.random.rand() + 0.5  # 0.5 ~ 1.5
         res[0] = np.clip(res[0] * rand_vol, -1, 1)
         res[1] = np.clip(res[1] * rand_vol, -1, 1)
-
+        # pre emphasis
+        res[0] = preemphasis(res[0])
+        res[1] = preemphasis(res[1])
         return res
 
 
