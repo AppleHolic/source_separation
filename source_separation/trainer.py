@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 from typing import Tuple, Dict
-
-from pytorch_sound.models.sound import InversePreEmphasis
 from pytorch_sound.trainer import Trainer, LogType
 
 
@@ -19,11 +17,25 @@ class Wave2WaveTrainer(Trainer):
                          grad_clip, grad_norm, pretrained_path, scheduler=scheduler)
         # loss
         self.mse_loss = nn.MSELoss()
-        # pytorch inverse preemphasis module
-        self.inv_preemp = InversePreEmphasis().cuda()
 
     def l1_loss(self, clean_hat, clean):
         return torch.abs(clean_hat - clean).mean()
+
+    def wsrd_loss(self, clean_hat, clean, noise, eps: float = 1e-5):
+        # calc norm
+        clean_norm = clean.norm(dim=1)
+        clean_hat_norm = clean_hat.norm(dim=1)
+        minus_c_norm = (noise - clean).norm(dim=1)
+        minus_ch_norm = (noise - clean_hat).norm(dim=1)
+
+        # calc alpha
+        alpha = clean_norm ** 2 / (clean_norm ** 2 + minus_c_norm ** 2)
+
+        # calc loss
+        loss_left = - alpha * (clean * clean_hat).sum(dim=1) / (clean_norm * clean_hat_norm + eps)
+        loss_right = - (1 - alpha) * ((noise - clean) * (noise - clean_hat)).sum(dim=1) / (minus_c_norm * minus_ch_norm + eps)
+        loss = (loss_left + loss_right).mean()
+        return loss
 
     def forward(self, noise, clean, speaker, txt, mask, is_logging: bool = False) -> Tuple[torch.Tensor, Dict]:
         # forward
@@ -35,15 +47,16 @@ class Wave2WaveTrainer(Trainer):
 
         # calc loss
         # loss = self.mse_loss(clean_hat, clean[..., :clean_hat.size(-1)])
-        loss = self.l1_loss(clean_hat, clean[..., :clean_hat.size(-1)])
+        # loss = self.l1_loss(clean_hat, clean[..., :clean_hat.size(-1)])
+        loss = self.wsrd_loss(clean_hat, clean, noise)
 
         if is_logging:
-            inf = torch.cat([clean_hat[:1], clean[:1], noise[:1]], dim=0).unsqueeze(1)
-            inf = self.inv_preemp(inf).squeeze(1)
-            clean_hat, clean, noise = map(lambda x: x.squeeze(), inf.chunk(3, 0))
+            clean_hat = clean_hat[0]
+            clean = clean[0]
+            noise = noise[0]
 
             meta = {
-                'loss': (loss.item(), LogType.SCALAR),
+                'wsrd_loss': (loss.item(), LogType.SCALAR),
                 'clean_hat.audio': (clean_hat, LogType.AUDIO),
                 'clean.audio': (clean, LogType.AUDIO),
                 'noise.audio': (noise, LogType.AUDIO),

@@ -4,8 +4,6 @@
 
 ---
 
-This repository is under developing. Please make an issue when you find some problems or suggestions.
-
 
 ## Introduction
 
@@ -16,31 +14,36 @@ It focuses to adapt more real-like dataset for training models.
 
 The latest model in this repository is basically built with spectrogram based models.
 In mainly, [Complex convolution and phase masking](https://arxiv.org/abs/1903.03107) are implemented with modifications.
+- Complex Convolution, Weighted SDR Loss
+
+
 And then, To more stable inferences in real cases, below things are adopted.
 
-1. Audioset data is used to augment noises.
+- Audioset data is used to augment noises.
 
 Dataset source is opened on [audioset_augmentor](https://github.com/AppleHolic/audioset_augmentor).
 See this [link](https://research.google.com/audioset/download.html) for finding explanations about audioset.
-*Balanced train label dataset is used* (Label balanced, non-human classes, 18055 samples)
+This repo used *Balanced train label dataset* (Label balanced, non-human classes, 18055 samples)
 
-2. Preemphasis is used to remove high-frequency noises on adapting real samples.
+- Preemphasis is used to remove high-frequency noises on adapting real samples.
 
 When I did use non-preemphasis models to test real samples, that model usually generate high-frequency noises.
 So, preemphasis is processed on noise and clean targets to reduce that noises.
 
-> Implementation details, samples, findings, pros and cons will be updated soon.
 
 ### Dataset
 
 [Voice Bank](https://datashare.is.ed.ac.uk/handle/10283/1942) and Audioset (see above section)
 
+You can use pre-defined preprocessing and dataset sources on https://github.com/Appleholic/pytorch_sound
+
 
 ## List to be updated
 
-- [ ] Reporting evaluations
 - [ ] A post that describes implementation details, samples, findings, pros and cons.
-- [ ] Separation with minimum dependency.
+- [ ] Inference with minimum dependency.
+- [ ] Add dynamic pitch augmentation
+- [ ] Reporting evaluations
 - [ ] Reducing dependencies.
 - [ ] Comments and docs with more plentiful information.
 
@@ -59,8 +62,9 @@ They are two external repositories on this repository.
 
 - pytorch_sound package
 
-It is built with using [pytorch_sound](https://github.com/AppleHolic/pytorch_sound) that similar to [fairseq](https://github.com/pytorch/fairseq).
+It is built with using [pytorch_sound](https://github.com/AppleHolic/pytorch_sound).
 So that, *pytorch_sound* is a modeling toolkit that allows engineers to train custom models for sound related tasks.
+Many of sources in this repository are based on pytorch_sound template.
 
 - audioset_augmentor
 
@@ -69,7 +73,7 @@ Explained it on above section. [link](https://github.com/AppleHolic/audioset_aug
 
 ## Pretrained Checkpoint
 
-- Model Name : refine_unet_base
+- Model Name : refine_unet_base (see settings.py)
 - Link : [Google Drive](https://drive.google.com/drive/folders/1U71LnB0yMbS-nRDloEtvisKX5b2CnHHe?usp=sharing)
 - Latest Tag : v0.0.0
 
@@ -77,6 +81,12 @@ Explained it on above section. [link](https://github.com/AppleHolic/audioset_aug
 ## Installation
 
 - Install above external repos
+
+```
+# You should see first README.md of audioset_augmentor to train separation models
+$ pip install git+https://github.com/Appleholic/audioset_augmentor
+$ pip install git+https://github.com/Appleholic/pytorch_sound@v0.0.1
+```
 
 - Install package
 
@@ -111,7 +121,7 @@ $ python source_separation/synthesize.py validate [YOUR_META_DIR] [OUTPUT_DIR] [
 All samples in given directory.
 
 ```bash
-$ python source_separation/synthesize.py separate [INPUT_DIR] [OUTPUT_DIR] [MODEL NAME] [PRETRAINED_PATH] [[OTHER OPTIONS...]]
+$ python source_separation/synthesize.py test-dir [INPUT_DIR] [OUTPUT_DIR] [MODEL NAME] [PRETRAINED_PATH] [[OTHER OPTIONS...]]
 ```
 
 
@@ -119,11 +129,11 @@ $ python source_separation/synthesize.py separate [INPUT_DIR] [OUTPUT_DIR] [MODE
 
 ### Train
 
-![Train L1 Loss curve](./assets/imgs/train_curve.png)
+![Train L1 Loss curve](./assets/imgs/train_curve_wsrd.png)
 
 ### Valid
 
-![Valid L1 Loss curve](./assets/imgs/validate_curve.png)
+![Valid L1 Loss curve](./assets/imgs/valid_curve_wsrd.png)
 
 
 ## License
