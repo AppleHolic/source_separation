@@ -17,27 +17,6 @@ def spec_unet_comp():
     }
 
 
-@register_model_architecture('wave_unet', 'wave_unet_base')
-def wave_unet_base():
-    return {
-        'hidden_dim': 128,
-        'kernel_size': 3,
-        'layers': 4,
-        'block_layers': 8
-    }
-
-
-@register_model_architecture('wave_unet', 'wave_unet_large')
-def wave_unet_large():
-    return {
-        'hidden_dim': 256,
-        'kernel_size': 3,
-        'layers': 4,
-        'block_layers': 8,
-        'dropout': 0.1,
-    }
-
-
 @register_model_architecture('refine_spectrogram_unet', 'refine_unet_base')
 def refine_unet_base():
     return {
@@ -46,23 +25,6 @@ def refine_unet_base():
         'filter_len': 512,
         'hop_len': 64,
         'block_layers': 4,
-        'layers': 4,
-        'kernel_size': 3,
-        'refine_layers': 1,
-        'is_mask': True,
-        'norm': 'ins',
-        'act': 'comp'
-    }
-
-
-@register_model_architecture('refine_spectrogram_unet', 'refine_unet_base2')
-def refine_unet_base2():
-    return {
-        'spec_dim': 256 + 1,
-        'hidden_dim': 512,
-        'filter_len': 512,
-        'hop_len': 128,
-        'block_layers': 5,
         'layers': 4,
         'kernel_size': 3,
         'refine_layers': 1,
