@@ -9,7 +9,7 @@ from pytorch_sound import settings
 from torch.optim.lr_scheduler import MultiStepLR
 
 from source_separation.dataset import get_datasets
-from source_separation.trainer import Wave2WaveTrainer, Wave2WaveTrainer2
+from source_separation.trainer import Wave2WaveTrainer
 
 
 def main(meta_dir: str, save_dir: str,
@@ -19,6 +19,7 @@ def main(meta_dir: str, save_dir: str,
          max_step: int = 100000, valid_max_step: int = 30, save_interval: int = 1000, log_interval: int = 50,
          grad_clip: float = 0.0, grad_norm: float = 30.0,
          is_audioset: bool = True, milestones: Tuple[int] = None, gamma: float = 0.1):
+
     # check args
     assert os.path.exists(meta_dir)
 

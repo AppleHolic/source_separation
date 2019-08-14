@@ -26,6 +26,7 @@ def __load_model(model_name: str, pretrained_path: str) -> torch.nn.Module:
 def run(audio_file: str, out_path: str, model_name: str, pretrained_path: str, lowpass_freq: int = 0):
     wav, sr = librosa.load(audio_file, sr=settings.SAMPLE_RATE)
     wav = preemphasis(wav)
+
     if wav.dtype != np.float32:
         wav = wav.astype(np.float32)
 
