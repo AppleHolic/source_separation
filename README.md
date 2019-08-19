@@ -1,6 +1,6 @@
 # Source Separation
 
-[![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/)
+[![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/) [![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FAppleholic%2Fsource_separation)](https://hits.seeyoufarm.com)
 
 ---
 
@@ -13,8 +13,8 @@ It focuses to adapt more real-like dataset for training models.
 ### Main components, different things
 
 The latest model in this repository is basically built with spectrogram based models.
-In mainly, [Complex convolution and phase masking](https://arxiv.org/abs/1903.03107) are implemented with modifications.
-- Complex Convolution, Weighted SDR Loss
+In mainly, [Phase-aware Speech Enhancement with Deep Complex U-Net](https://arxiv.org/abs/1903.03107) are implemented with modifications.
+- Complex Convolution, Masking, Weighted SDR Loss
 
 
 And then, To more stable inferences in real cases, below things are adopted.
@@ -26,9 +26,6 @@ See this [link](https://research.google.com/audioset/download.html) for finding 
 This repo used *Balanced train label dataset* (Label balanced, non-human classes, 18055 samples)
 
 - Preemphasis is used to remove high-frequency noises on adapting real samples.
-
-When I did use non-preemphasis models to test real samples, that model usually generate high-frequency noises.
-So, preemphasis is processed on noise and clean targets to reduce that noises.
 
 
 ### Dataset
@@ -82,8 +79,9 @@ Explained it on above section. [link](https://github.com/AppleHolic/audioset_aug
 
 - Install above external repos
 
+> You should see first README.md of audioset_augmentor and pytorch_sound, to prepare dataset and to train separation models.
+
 ```
-# You should see first README.md of audioset_augmentor to train separation models
 $ pip install git+https://github.com/Appleholic/audioset_augmentor
 $ pip install git+https://github.com/Appleholic/pytorch_sound@v0.0.1
 ```
