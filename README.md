@@ -75,6 +75,14 @@ Explained it on above section. [link](https://github.com/AppleHolic/audioset_aug
 - Latest Tag : v0.0.0
 
 
+## Predicted Samples
+
+- Validation 10 random samples
+  - Link : [Google Drive](https://drive.google.com/drive/folders/1CafFnqWn_QvVPu2feNLn6pnjRYIa_rbP?usp=sharing)
+
+- Test Samples : When I finalize to list up 'Creative Commons' licensed youtube files, I will make a link or a post.
+
+
 ## Installation
 
 - Install above external repos
