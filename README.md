@@ -71,7 +71,7 @@ Explained it on above section. [link](https://github.com/AppleHolic/audioset_aug
 ## Pretrained Checkpoint
 
 - Model Name : refine_unet_base (see settings.py)
-- Link : [Google Drive](https://drive.google.com/drive/folders/1U71LnB0yMbS-nRDloEtvisKX5b2CnHHe?usp=sharing)
+- Link : [Google Drive](https://drive.google.com/open?id=1JRK-0RVV2o7cyRdvFuwe5iw84ESvfcyR)
 - Latest Tag : v0.0.0
 
 
@@ -80,7 +80,8 @@ Explained it on above section. [link](https://github.com/AppleHolic/audioset_aug
 - Validation 10 random samples
   - Link : [Google Drive](https://drive.google.com/drive/folders/1CafFnqWn_QvVPu2feNLn6pnjRYIa_rbP?usp=sharing)
 
-- Test Samples : When I finalize to list up 'Creative Commons' licensed youtube files, I will make a link or a post.
+- Test Samples : 
+  - Link : [Google Drive](https://drive.google.com/open?id=19Sn6pe5-BtWXYa6OiLbYGH7iCU-mzB8j) 
 
 
 ## Installation
