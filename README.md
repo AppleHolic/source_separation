@@ -78,7 +78,7 @@ Explained it on above section. [link](https://github.com/AppleHolic/audioset_aug
 ## Predicted Samples
 
 - Validation 10 random samples
-  - Link : [Google Drive](https://drive.google.com/drive/folders/1CafFnqWn_QvVPu2feNLn6pnjRYIa_rbP?usp=sharing)
+  - Link : [Google Drive](https://drive.google.com/open?id=1CafFnqWn_QvVPu2feNLn6pnjRYIa_rbP)
 
 - Test Samples : 
   - Link : [Google Drive](https://drive.google.com/open?id=19Sn6pe5-BtWXYa6OiLbYGH7iCU-mzB8j) 
