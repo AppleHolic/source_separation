@@ -11,10 +11,11 @@ class Wave2WaveTrainer(Trainer):
                  max_step: int, valid_max_step: int, save_interval: int, log_interval: int,
                  save_dir: str, save_prefix: str = '',
                  grad_clip: float = 0.0, grad_norm: float = 0.0,
+                 sr: int = 22050,
                  pretrained_path: str = None, scheduler: torch.optim.lr_scheduler._LRScheduler = None):
         super().__init__(model, optimizer, train_dataset, valid_dataset,
                          max_step, valid_max_step, save_interval, log_interval, save_dir, save_prefix,
-                         grad_clip, grad_norm, pretrained_path, scheduler=scheduler)
+                         grad_clip, grad_norm, pretrained_path, sr=sr, scheduler=scheduler)
         # loss
         self.mse_loss = nn.MSELoss()
 
@@ -29,7 +30,7 @@ class Wave2WaveTrainer(Trainer):
         minus_ch_norm = (noise - clean_hat).norm(dim=1)
 
         # calc alpha
-        alpha = clean_norm ** 2 / (clean_norm ** 2 + minus_c_norm ** 2)
+        alpha = clean_norm ** 2 / (clean_norm ** 2 + minus_c_norm ** 2 + eps)
 
         # calc loss
         loss_left = - alpha * (clean * clean_hat).sum(dim=1) / (clean_norm * clean_hat_norm + eps)
@@ -37,7 +38,7 @@ class Wave2WaveTrainer(Trainer):
         loss = (loss_left + loss_right).mean()
         return loss
 
-    def forward(self, noise, clean, speaker, txt, mask, is_logging: bool = False) -> Tuple[torch.Tensor, Dict]:
+    def forward(self, noise, clean, *args, is_logging: bool = False) -> Tuple[torch.Tensor, Dict]:
         # forward
         res = self.model(noise)
         if isinstance(res, tuple):

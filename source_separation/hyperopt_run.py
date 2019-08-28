@@ -20,7 +20,7 @@ def _main(meta_dir: str,
           save_prefix: str = '',
           model_name: str = 'refine_unet_base',   # or refine_spectrogram_unet
           save_dir: str = 'savedir', batch_size: int = 128, num_workers: int = 16, fix_len: float = 2.,
-          lr: float = 3e-4, beta1: float = 0.5, beta2: float = 0.9, weight_decay: float = 0.0,
+          lr: float = 5e-4, beta1: float = 0.5, beta2: float = 0.9, weight_decay: float = 0.0,
           max_step: int = 100000, valid_max_step: int = 30, save_interval: int = 1000, log_interval: int = 100,
           grad_clip: float = 0.0, grad_norm: float = 30.0, milestones: Tuple[int] = None, gamma: float = 0.2,
           is_audioset: bool = True,

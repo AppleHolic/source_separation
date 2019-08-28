@@ -32,3 +32,20 @@ def refine_unet_base():
         'norm': 'ins',
         'act': 'comp'
     }
+
+
+@register_model_architecture('refine_spectrogram_unet', 'refine_unet_larger')
+def refine_unet_larger():
+    return {
+        'spec_dim': 512 + 1,
+        'hidden_dim': 768,
+        'filter_len': 512 * 2,
+        'hop_len': 64 * 2,
+        'block_layers': 4,
+        'layers': 4,
+        'kernel_size': 3,
+        'refine_layers': 1,
+        'is_mask': True,
+        'norm': 'ins',
+        'act': 'comp'
+    }
