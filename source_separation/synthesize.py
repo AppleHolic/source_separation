@@ -23,8 +23,9 @@ def __load_model(model_name: str, pretrained_path: str) -> torch.nn.Module:
     return model
 
 
-def run(audio_file: str, out_path: str, model_name: str, pretrained_path: str, lowpass_freq: int = 0):
-    wav, sr = librosa.load(audio_file, sr=settings.SAMPLE_RATE)
+def run(audio_file: str, out_path: str, model_name: str, pretrained_path: str, lowpass_freq: int = 0,
+        sample_rate: int = 22050):
+    wav, sr = librosa.load(audio_file, sr=sample_rate)
     wav = preemphasis(wav)
 
     if wav.dtype != np.float32:
@@ -46,7 +47,7 @@ def run(audio_file: str, out_path: str, model_name: str, pretrained_path: str, l
         out_wav = lowpass(out_wav, frequency=lowpass_freq)
 
     # save wav
-    librosa.output.write_wav(out_path, inv_preemphasis(out_wav).clip(-1., 1.), settings.SAMPLE_RATE)
+    librosa.output.write_wav(out_path, inv_preemphasis(out_wav).clip(-1., 1.), sample_rate)
 
     print('Finish !')
 
