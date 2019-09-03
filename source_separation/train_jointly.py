@@ -3,27 +3,25 @@ import os
 import torch
 import torch.nn as nn
 from typing import Tuple
-from pytorch_sound.data.meta import voice_bank, dsd100
 from pytorch_sound.data.meta.dsd100 import DSD100Meta
 from pytorch_sound.data.meta.voice_bank import VoiceBankMeta
 from pytorch_sound.models import build_model
 from torch.optim.lr_scheduler import MultiStepLR
 
-from source_separation.dataset import get_datasets
+from source_separation.dataset import get_concated_datasets
 from source_separation.trainer import Wave2WaveTrainer
 
 
-def main(meta_dir: str, save_dir: str,
-         save_prefix: str = '', pretrained_path: str = '',
+def main(vb_meta_dir: str, dsd_meta_dir: str,
+         save_dir: str, save_prefix: str = '', pretrained_path: str = '',
          model_name: str = 'refine_unet_base', batch_size: int = 128, num_workers: int = 16, fix_len: float = 2.,
          lr: float = 5e-4, betas: Tuple[float] = (0.5, 0.9), weight_decay: float = 0.0,
          max_step: int = 200000, valid_max_step: int = 30, save_interval: int = 1000, log_interval: int = 50,
          grad_clip: float = 0.0, grad_norm: float = 30.0,
-         is_augment: bool = True, milestones: Tuple[int] = None, gamma: float = 0.1,
-         is_dsd: bool = False):
+         is_augment: bool = True, milestones: Tuple[int] = None, gamma: float = 0.1, sample_rate: int = 44100):
 
     # check args
-    assert os.path.exists(meta_dir)
+    assert os.path.exists(vb_meta_dir) and os.path.exists(dsd_meta_dir)
 
     # create model
     model = build_model(model_name).cuda()
@@ -40,28 +38,13 @@ def main(meta_dir: str, save_dir: str,
     else:
         scheduler = None
 
-    # adopt dsd100 case
-    if is_dsd:
-        sr = 44100
-        if is_augment:
-            dataset_func = get_datasets
-            meta_cls = DSD100Meta
-            is_audioset = False
-        else:
-            dataset_func = dsd100.get_datasets
-    else:
-        sr = 22050
-        # load dataset
-        if is_augment:
-            dataset_func = get_datasets
-            meta_cls = VoiceBankMeta
-            is_audioset = True
-        else:
-            dataset_func = voice_bank.get_datasets
+    # make metas
+    meta_dir_list = [vb_meta_dir, dsd_meta_dir]
+    meta_cls_list = [VoiceBankMeta, DSD100Meta]
 
-    train_loader, valid_loader = dataset_func(
-        meta_dir, batch_size=batch_size, num_workers=num_workers, meta_cls=meta_cls, is_audioset=is_audioset,
-        fix_len=int(fix_len * sr), audio_mask=True
+    train_loader, valid_loader = get_concated_datasets(
+        meta_dir_list, batch_size=batch_size, num_workers=num_workers, meta_cls_list=meta_cls_list,
+        is_audioset=is_augment, fix_len=int(fix_len * sample_rate), audio_mask=True
     )
 
     # train
@@ -70,7 +53,7 @@ def main(meta_dir: str, save_dir: str,
         max_step=max_step, valid_max_step=min(valid_max_step, len(valid_loader)), save_interval=save_interval,
         log_interval=log_interval,
         save_dir=save_dir, save_prefix=save_prefix, grad_clip=grad_clip, grad_norm=grad_norm,
-        pretrained_path=pretrained_path, scheduler=scheduler, sr=sr
+        pretrained_path=pretrained_path, scheduler=scheduler, sr=sample_rate
     ).run()
 
 
