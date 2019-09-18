@@ -46,7 +46,7 @@ def main(meta_dir: str, save_dir: str,
         if is_augment:
             dataset_func = get_datasets
             meta_cls = DSD100Meta
-            is_audioset = False
+            is_audioset = is_augment
         else:
             dataset_func = dsd100.get_datasets
     else:
