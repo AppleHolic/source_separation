@@ -5,6 +5,7 @@ import torch.nn as nn
 from typing import Tuple
 from pytorch_sound.data.meta.dsd100 import DSD100Meta
 from pytorch_sound.data.meta.voice_bank import VoiceBankMeta
+from pytorch_sound.data.meta.medleydb import MedleyDBMeta
 from pytorch_sound.models import build_model
 from torch.optim.lr_scheduler import MultiStepLR
 
@@ -12,11 +13,11 @@ from source_separation.dataset import get_concated_datasets
 from source_separation.trainer import Wave2WaveTrainer
 
 
-def main(vb_meta_dir: str, dsd_meta_dir: str,
+def main(vb_meta_dir: str, dsd_meta_dir: str, medley_meta_dir: str,
          save_dir: str, save_prefix: str = '', pretrained_path: str = '',
          model_name: str = 'refine_unet_larger', batch_size: int = 128, num_workers: int = 16, fix_len: float = 2.,
          lr: float = 5e-4, betas: Tuple[float] = (0.5, 0.9), weight_decay: float = 0.0,
-         max_step: int = 200000, valid_max_step: int = 30, save_interval: int = 1000, log_interval: int = 50,
+         max_step: int = 200000, valid_max_step: int = 50, save_interval: int = 1000, log_interval: int = 50,
          grad_clip: float = 0.0, grad_norm: float = 30.0,
          is_augment: bool = True, milestones: Tuple[int] = None, gamma: float = 0.1, sample_rate: int = 44100):
 
@@ -39,8 +40,8 @@ def main(vb_meta_dir: str, dsd_meta_dir: str,
         scheduler = None
 
     # make metas
-    meta_dir_list = [vb_meta_dir, dsd_meta_dir]
-    meta_cls_list = [VoiceBankMeta, DSD100Meta]
+    meta_dir_list = [vb_meta_dir, dsd_meta_dir, medley_meta_dir]
+    meta_cls_list = [VoiceBankMeta, DSD100Meta, MedleyDBMeta]
 
     train_loader, valid_loader = get_concated_datasets(
         meta_dir_list, batch_size=batch_size, num_workers=num_workers, meta_cls_list=meta_cls_list,
