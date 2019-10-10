@@ -27,6 +27,14 @@ This repo used *Balanced train label dataset* (Label balanced, non-human classes
 
 - Preemphasis is used to remove high-frequency noises on adapting real samples.
 
+It's not official implementation by authors of paper.
+
+
+#### 2019.09 ~ 2019.10 updates
+
+- Add singing voice separation with joint training on datasets
+  - Additional datasets : DSD100, MedleyDB V1 and V2
+
 
 ### Dataset
 
@@ -50,6 +58,7 @@ You can use pre-defined preprocessing and dataset sources on https://github.com/
 - Python > 3.6
 - pytorch 1.0
 - ubuntu 16.04
+- Brain Cloud (Kakaobrain Cluster) V2.XLARGE (2 V100 GPUs, 28 cores cpu, 244 GB memory)
 
 
 ## External Repositories
