@@ -21,9 +21,6 @@ def main(vb_meta_dir: str, dsd_meta_dir: str, medley_meta_dir: str,
          grad_clip: float = 0.0, grad_norm: float = 30.0,
          is_augment: bool = True, milestones: Tuple[int] = None, gamma: float = 0.1, sample_rate: int = 44100):
 
-    # check args
-    assert os.path.exists(vb_meta_dir) and os.path.exists(dsd_meta_dir)
-
     # create model
     model = build_model(model_name).cuda()
 
@@ -42,6 +39,7 @@ def main(vb_meta_dir: str, dsd_meta_dir: str, medley_meta_dir: str,
     # make metas
     meta_dir_list = [vb_meta_dir, dsd_meta_dir, medley_meta_dir]
     meta_cls_list = [VoiceBankMeta, DSD100Meta, MedleyDBMeta]
+    meta_dir_list, meta_cls_list = map(list, zip(*[(d, cls) for d, cls in zip(meta_dir_list, meta_cls_list) if d]))
 
     train_loader, valid_loader = get_concated_datasets(
         meta_dir_list, batch_size=batch_size, num_workers=num_workers, meta_cls_list=meta_cls_list,

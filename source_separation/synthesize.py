@@ -25,6 +25,7 @@ def __load_model(model_name: str, pretrained_path: str) -> torch.nn.Module:
 
 def run(audio_file: str, out_path: str, model_name: str, pretrained_path: str, lowpass_freq: int = 0,
         sample_rate: int = 22050):
+    print('Loading audio file...')
     wav, sr = librosa.load(audio_file, sr=sample_rate)
     wav = preemphasis(wav)
 
