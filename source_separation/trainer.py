@@ -19,6 +19,12 @@ class Wave2WaveTrainer(Trainer):
         # loss
         self.mse_loss = nn.MSELoss()
 
+        # module
+        if isinstance(self.model, nn.DataParallel):
+            self.module = self.model.module
+        else:
+            self.module = self.model
+
     def l1_loss(self, clean_hat, clean):
         return torch.abs(clean_hat - clean).mean()
 
@@ -58,6 +64,44 @@ class Wave2WaveTrainer(Trainer):
 
             meta = {
                 'wsrd_loss': (loss.item(), LogType.SCALAR),
+                'clean_hat.audio': (clean_hat, LogType.AUDIO),
+                'clean.audio': (clean, LogType.AUDIO),
+                'noise.audio': (noise, LogType.AUDIO),
+                'clean_hat.plot': (clean_hat, LogType.PLOT),
+                'clean.plot': (clean, LogType.PLOT),
+                'noise.plot': (noise, LogType.PLOT),
+            }
+        else:
+            meta = {}
+
+        return loss, meta
+
+
+class LossMixingTrainer(Wave2WaveTrainer):
+
+    def forward(self, noise, clean, *args, is_logging: bool = False) -> Tuple[torch.Tensor, Dict]:
+        # forward
+        clean_hat, mag_hat, phase_hat = self.model(noise)
+
+        # calc losses
+        # make spectrogram of clean wave
+        clean_mag, clean_phase = self.module.log_stft(clean)
+        # calc l1 loss on magnitude
+        mag_l1_loss = self.l1_loss(mag_hat, clean_mag)
+        # calc loss
+        wsrd_loss = self.wsrd_loss(clean_hat, clean, noise)
+
+        loss = mag_l1_loss + wsrd_loss
+
+        if is_logging:
+            clean_hat = clean_hat[0]
+            clean = clean[0]
+            noise = noise[0]
+
+            meta = {
+                'total_loss': (loss.item(), LogType.SCALAR),
+                'wsrd_loss': (wsrd_loss.item(), LogType.SCALAR),
+                'mag_l1_loss': (mag_l1_loss.item(), LogType.SCALAR),
                 'clean_hat.audio': (clean_hat, LogType.AUDIO),
                 'clean.audio': (clean, LogType.AUDIO),
                 'noise.audio': (noise, LogType.AUDIO),

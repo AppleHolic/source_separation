@@ -10,7 +10,7 @@ from pytorch_sound.models import build_model
 from torch.optim.lr_scheduler import MultiStepLR
 
 from source_separation.dataset import get_concated_datasets
-from source_separation.trainer import Wave2WaveTrainer
+from source_separation.trainer import Wave2WaveTrainer, LossMixingTrainer
 
 
 def main(vb_meta_dir: str, dsd_meta_dir: str, medley_meta_dir: str,
@@ -19,7 +19,8 @@ def main(vb_meta_dir: str, dsd_meta_dir: str, medley_meta_dir: str,
          lr: float = 5e-4, betas: Tuple[float] = (0.5, 0.9), weight_decay: float = 0.0,
          max_step: int = 200000, valid_max_step: int = 50, save_interval: int = 1000, log_interval: int = 50,
          grad_clip: float = 0.0, grad_norm: float = 30.0,
-         is_augment: bool = True, milestones: Tuple[int] = None, gamma: float = 0.1, sample_rate: int = 44100):
+         is_augment: bool = True, milestones: Tuple[int] = None, gamma: float = 0.1, sample_rate: int = 44100,
+         mix_loss: bool = False):
 
     # create model
     model = build_model(model_name).cuda()
@@ -46,8 +47,13 @@ def main(vb_meta_dir: str, dsd_meta_dir: str, medley_meta_dir: str,
         is_audioset=is_augment, fix_len=int(fix_len * sample_rate), audio_mask=True
     )
 
+    if mix_loss:
+        trainer = LossMixingTrainer
+    else:
+        trainer = Wave2WaveTrainer
+
     # train
-    Wave2WaveTrainer(
+    trainer(
         model, optimizer, train_loader, valid_loader,
         max_step=max_step, valid_max_step=min(valid_max_step, len(valid_loader)), save_interval=save_interval,
         log_interval=log_interval,

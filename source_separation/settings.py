@@ -49,3 +49,12 @@ def refine_unet_larger():
         'norm': 'ins',
         'act': 'comp'
     }
+
+
+@register_model_architecture('refine_spectrogram_unet', 'refine_unet_larger_add')
+def refine_unet_larger_add():
+    d = refine_unet_larger()
+    d.update(
+        add_spec_results=True
+    )
+    return d

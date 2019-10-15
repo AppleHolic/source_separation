@@ -10,7 +10,7 @@ from pytorch_sound.models import build_model
 from torch.optim.lr_scheduler import MultiStepLR
 
 from source_separation.dataset import get_datasets
-from source_separation.trainer import Wave2WaveTrainer
+from source_separation.trainer import Wave2WaveTrainer, LossMixingTrainer
 
 
 def main(meta_dir: str, save_dir: str,
@@ -20,7 +20,7 @@ def main(meta_dir: str, save_dir: str,
          max_step: int = 200000, valid_max_step: int = 30, save_interval: int = 1000, log_interval: int = 50,
          grad_clip: float = 0.0, grad_norm: float = 30.0,
          is_augment: bool = True, milestones: Tuple[int] = None, gamma: float = 0.1,
-         is_dsd: bool = False):
+         is_dsd: bool = False, mix_loss: bool = False):
 
     # check args
     assert os.path.exists(meta_dir)
@@ -64,8 +64,13 @@ def main(meta_dir: str, save_dir: str,
         fix_len=int(fix_len * sr), audio_mask=True
     )
 
+    if mix_loss:
+        trainer = LossMixingTrainer
+    else:
+        trainer = Wave2WaveTrainer
+
     # train
-    Wave2WaveTrainer(
+    trainer(
         model, optimizer, train_loader, valid_loader,
         max_step=max_step, valid_max_step=min(valid_max_step, len(valid_loader)), save_interval=save_interval,
         log_interval=log_interval,
