@@ -106,25 +106,33 @@ def validate(meta_dir: str, out_dir: str, model_name: str, pretrained_path: str,
     print('Finish !')
 
 
-def test_worker(out_wav, file_path, in_dir, out_dir, sample_rate, l):
-    # make output path
-    sub_dir = os.path.dirname(file_path).replace(in_dir, '')
-    file_out_dir = os.path.join(out_dir, sub_dir)
-    os.makedirs(file_out_dir, exist_ok=True)
-    out_file_path = os.path.join(file_out_dir, os.path.basename(file_path))
-    out_wav = out_wav[:l]
-    out_wav = inv_preemphasis(out_wav.squeeze())
-    librosa.output.write_wav(out_file_path, out_wav, sample_rate)
+def test_worker(out_wav, file_path, in_dir, out_dir, sample_rate, wav_len):
+    try:
+        if wav_len == 1:
+            return
+        # make output path
+        sub_dir = os.path.dirname(file_path).replace(in_dir, '')
+        file_out_dir = os.path.join(out_dir, sub_dir)
+        os.makedirs(file_out_dir, exist_ok=True)
+        out_file_path = os.path.join(file_out_dir, os.path.basename(file_path))
+        out_wav = out_wav[:wav_len]
+        out_wav = inv_preemphasis(out_wav.squeeze())
+        librosa.output.write_wav(out_file_path, out_wav, sample_rate)
+    except Exception:
+        print(f'{file_path} has an error')
 
 
 class WaveDataset(Dataset):
 
-    def __init__(self, wav_list, sample_rate):
+    def __init__(self, wav_list, sample_rate, max_len):
         self.wav_list = wav_list
         self.sample_rate = sample_rate
+        self.max_len = max_len
 
     def __getitem__(self, idx):
         wav = librosa.load(self.wav_list[idx], sr=self.sample_rate)[0]
+        if len(wav) > self.sample_rate * self.max_len:
+            wav = np.zeros(1)
         return [preemphasis(wav), np.array([len(wav)])]
 
     def __len__(self):
@@ -132,7 +140,7 @@ class WaveDataset(Dataset):
 
 
 def test_dir(in_dir: str, out_dir: str, model_name: str, pretrained_path: str, sample_rate: int = 22050,
-             num_workers: int = 4, batch_size: int = 64):
+             num_workers: int = 1, batch_size: int = 64, max_len: float = 20.):
     # lookup files
     print('Lookup wave files ...')
     wav_list = list(map(str, Path(in_dir).glob('**/*.wav')))
@@ -140,8 +148,11 @@ def test_dir(in_dir: str, out_dir: str, model_name: str, pretrained_path: str, s
     # load models
     model = __load_model(model_name, pretrained_path)
 
+    if torch.cuda.device_count() > 1:
+        model = torch.nn.DataParallel(model)
+
     # dataloader
-    dataset = WaveDataset(wav_list, sample_rate)
+    dataset = WaveDataset(wav_list, sample_rate, max_len)
     data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False,
                              num_workers=num_workers, collate_fn=SpeechDataLoader.pad_collate_fn)
 
