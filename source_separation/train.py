@@ -46,9 +46,9 @@ def main(meta_dir: str, save_dir: str,
         if is_augment:
             dataset_func = get_datasets
             meta_cls = DSD100Meta
-            is_audioset = is_augment
         else:
             dataset_func = dsd100.get_datasets
+        is_audioset = False
     else:
         sr = 22050
         # load dataset
@@ -58,6 +58,7 @@ def main(meta_dir: str, save_dir: str,
             is_audioset = True
         else:
             dataset_func = voice_bank.get_datasets
+            is_audioset = False
 
     train_loader, valid_loader = dataset_func(
         meta_dir, batch_size=batch_size, num_workers=num_workers, meta_cls=meta_cls, is_audioset=is_audioset,
