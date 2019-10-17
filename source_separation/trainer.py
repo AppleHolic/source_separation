@@ -28,7 +28,7 @@ class Wave2WaveTrainer(Trainer):
     def l1_loss(self, clean_hat, clean):
         return torch.abs(clean_hat - clean).mean()
 
-    def wsrd_loss(self, clean_hat, clean, noise, eps: float = 1e-5):
+    def wsdr_loss(self, clean_hat, clean, noise, eps: float = 1e-5):
         # calc norm
         clean_norm = clean.norm(dim=1)
         clean_hat_norm = clean_hat.norm(dim=1)
@@ -53,9 +53,7 @@ class Wave2WaveTrainer(Trainer):
             clean_hat = res
 
         # calc loss
-        # loss = self.mse_loss(clean_hat, clean[..., :clean_hat.size(-1)])
-        # loss = self.l1_loss(clean_hat, clean[..., :clean_hat.size(-1)])
-        loss = self.wsrd_loss(clean_hat, clean, noise)
+        loss = self.wsdr_loss(clean_hat, clean, noise)
 
         if is_logging:
             clean_hat = clean_hat[0]
@@ -63,7 +61,7 @@ class Wave2WaveTrainer(Trainer):
             noise = noise[0]
 
             meta = {
-                'wsrd_loss': (loss.item(), LogType.SCALAR),
+                'wsdr_loss': (loss.item(), LogType.SCALAR),
                 'clean_hat.audio': (clean_hat, LogType.AUDIO),
                 'clean.audio': (clean, LogType.AUDIO),
                 'noise.audio': (noise, LogType.AUDIO),
@@ -79,6 +77,10 @@ class Wave2WaveTrainer(Trainer):
 
 class LossMixingTrainer(Wave2WaveTrainer):
 
+    def power_loss(self, clean_hat, clean):
+        B = clean_hat.size(1)
+        return (clean_hat - clean).norm() / B
+
     def forward(self, noise, clean, *args, is_logging: bool = False) -> Tuple[torch.Tensor, Dict]:
         # forward
         clean_hat, mag_hat, phase_hat = self.model(noise)
@@ -87,27 +89,36 @@ class LossMixingTrainer(Wave2WaveTrainer):
         # make spectrogram of clean wave
         clean_mag, clean_phase = self.module.log_stft(clean)
         # calc l1 loss on magnitude
-        mag_l1_loss = self.l1_loss(mag_hat, clean_mag)
+        # mag_l1_loss = self.l1_loss(mag_hat, clean_mag)
+        mag_power_loss = self.power_loss(mag_hat, clean_mag)
         # calc loss
-        wsrd_loss = self.wsrd_loss(clean_hat, clean, noise)
+        wsdr_loss = self.wsdr_loss(clean_hat, clean, noise)
 
-        loss = mag_l1_loss + wsrd_loss
+        # loss = mag_l1_loss + wsdr_loss
+        loss = mag_power_loss + wsdr_loss
 
         if is_logging:
+            # wav
             clean_hat = clean_hat[0]
             clean = clean[0]
             noise = noise[0]
+            # mag
+            mag_hat = mag_hat[0]
+            clean_mag = clean_mag[0]
 
             meta = {
                 'total_loss': (loss.item(), LogType.SCALAR),
-                'wsrd_loss': (wsrd_loss.item(), LogType.SCALAR),
-                'mag_l1_loss': (mag_l1_loss.item(), LogType.SCALAR),
+                'wsdr_loss': (wsdr_loss.item(), LogType.SCALAR),
+                # 'mag_l1_loss': (mag_l1_loss.item(), LogType.SCALAR),
+                'mag_power_loss': (mag_power_loss.item(), LogType.SCALAR),
                 'clean_hat.audio': (clean_hat, LogType.AUDIO),
                 'clean.audio': (clean, LogType.AUDIO),
                 'noise.audio': (noise, LogType.AUDIO),
                 'clean_hat.plot': (clean_hat, LogType.PLOT),
                 'clean.plot': (clean, LogType.PLOT),
                 'noise.plot': (noise, LogType.PLOT),
+                'clean.mag': (clean_mag, LogType.IMAGE),
+                'hat.mag': (mag_hat, LogType.IMAGE),
             }
         else:
             meta = {}
