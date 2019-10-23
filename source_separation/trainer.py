@@ -21,7 +21,7 @@ class Wave2WaveTrainer(Trainer):
     def l1_loss(self, clean_hat, clean):
         return torch.abs(clean_hat - clean).mean()
 
-    def wsrd_loss(self, clean_hat, clean, noise, eps: float = 1e-5):
+    def wsdr_loss(self, clean_hat, clean, noise, eps: float = 1e-5):
         # calc norm
         clean_norm = clean.norm(dim=1)
         clean_hat_norm = clean_hat.norm(dim=1)
@@ -46,9 +46,7 @@ class Wave2WaveTrainer(Trainer):
             clean_hat = res
 
         # calc loss
-        # loss = self.mse_loss(clean_hat, clean[..., :clean_hat.size(-1)])
-        # loss = self.l1_loss(clean_hat, clean[..., :clean_hat.size(-1)])
-        loss = self.wsrd_loss(clean_hat, clean, noise)
+        loss = self.wsdr_loss(clean_hat, clean, noise)
 
         if is_logging:
             clean_hat = clean_hat[0]
@@ -56,7 +54,7 @@ class Wave2WaveTrainer(Trainer):
             noise = noise[0]
 
             meta = {
-                'wsrd_loss': (loss.item(), LogType.SCALAR),
+                'wsdr_loss': (loss.item(), LogType.SCALAR),
                 'clean_hat.audio': (clean_hat, LogType.AUDIO),
                 'clean.audio': (clean, LogType.AUDIO),
                 'noise.audio': (noise, LogType.AUDIO),

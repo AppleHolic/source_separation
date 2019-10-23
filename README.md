@@ -37,12 +37,7 @@ You can use pre-defined preprocessing and dataset sources on https://github.com/
 
 ## List to be updated
 
-- [ ] A post that describes implementation details, samples, findings, pros and cons.
-- [ ] Inference with minimum dependency.
-- [ ] Add dynamic pitch augmentation
-- [ ] Reporting evaluations
-- [ ] Reducing dependencies.
-- [ ] Comments and docs with more plentiful information.
+- [ ] Singing Voice Separation is going on finishing stage (2019.10)
 
 
 ## Environment
@@ -136,11 +131,11 @@ $ python source_separation/synthesize.py test-dir [INPUT_DIR] [OUTPUT_DIR] [MODE
 
 ### Train
 
-![Train L1 Loss curve](./assets/imgs/train_curve_wsrd.png)
+![Train L1 Loss curve](./assets/imgs/train_curve_wsdr.png)
 
 ### Valid
 
-![Valid L1 Loss curve](./assets/imgs/valid_curve_wsrd.png)
+![Valid L1 Loss curve](./assets/imgs/valid_curve_wsdr.png)
 
 
 ## License
