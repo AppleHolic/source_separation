@@ -45,6 +45,7 @@ You can use pre-defined preprocessing and dataset sources on https://github.com/
 - Python > 3.6
 - pytorch 1.0
 - ubuntu 16.04
+- Brain Cloud V2.XLARGE Type (V100 2 GPU, 28 CPU cores, 244 GB memory)
 
 
 ## External Repositories
