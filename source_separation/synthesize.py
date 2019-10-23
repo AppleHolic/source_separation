@@ -130,7 +130,7 @@ class WaveDataset(Dataset):
         self.max_len = max_len
 
     def __getitem__(self, idx):
-        wav = librosa.load(self.wav_list[idx], sr=self.sample_rate)[0]
+        wav = librosa.load(self.wav_list[idx], sr=self.sample_rate)[0].squeeze()
         if len(wav) > self.sample_rate * self.max_len:
             wav = np.zeros(1)
         return [preemphasis(wav), np.array([len(wav)])]
