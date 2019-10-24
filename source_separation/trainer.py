@@ -25,10 +25,10 @@ class Wave2WaveTrainer(Trainer):
         else:
             self.module = self.model
 
-    def l1_loss(self, clean_hat, clean):
+    def l1_loss(self, clean_hat: torch.Tensor, clean: torch.Tensor):
         return torch.abs(clean_hat - clean).mean()
 
-    def wsdr_loss(self, clean_hat, clean, noise, eps: float = 1e-5):
+    def wsdr_loss(self, clean_hat: torch.Tensor, clean: torch.Tensor, noise: torch.Tensor, eps: float = 1e-5):
         # calc norm
         clean_norm = clean.norm(dim=1)
         clean_hat_norm = clean_hat.norm(dim=1)
@@ -44,7 +44,7 @@ class Wave2WaveTrainer(Trainer):
         loss = (loss_left + loss_right).mean()
         return loss
 
-    def forward(self, noise, clean, *args, is_logging: bool = False) -> Tuple[torch.Tensor, Dict]:
+    def forward(self, noise: torch.Tensor, clean: torch.Tensor, *args, is_logging: bool = False) -> Tuple[torch.Tensor, Dict]:
         # forward
         res = self.model(noise)
         if isinstance(res, tuple):
@@ -77,7 +77,9 @@ class Wave2WaveTrainer(Trainer):
 
 class LossMixingTrainer(Wave2WaveTrainer):
 
-    def power_loss(self, clean_hat, clean):
+    def power_loss(self, clean_hat: torch.Tensor, clean: torch.Tensor):
+        # Power Loss on "ClariNet" paper
+        # https://arxiv.org/pdf/1807.07281.pdf
         B = clean_hat.size(1)
         return (clean_hat - clean).norm() / B
 
@@ -89,12 +91,10 @@ class LossMixingTrainer(Wave2WaveTrainer):
         # make spectrogram of clean wave
         clean_mag, clean_phase = self.module.log_stft(clean)
         # calc l1 loss on magnitude
-        # mag_l1_loss = self.l1_loss(mag_hat, clean_mag)
         mag_power_loss = self.power_loss(mag_hat, clean_mag)
         # calc loss
         wsdr_loss = self.wsdr_loss(clean_hat, clean, noise)
 
-        # loss = mag_l1_loss + wsdr_loss
         loss = mag_power_loss + wsdr_loss
 
         if is_logging:
@@ -109,7 +109,6 @@ class LossMixingTrainer(Wave2WaveTrainer):
             meta = {
                 'total_loss': (loss.item(), LogType.SCALAR),
                 'wsdr_loss': (wsdr_loss.item(), LogType.SCALAR),
-                # 'mag_l1_loss': (mag_l1_loss.item(), LogType.SCALAR),
                 'mag_power_loss': (mag_power_loss.item(), LogType.SCALAR),
                 'clean_hat.audio': (clean_hat, LogType.AUDIO),
                 'clean.audio': (clean, LogType.AUDIO),

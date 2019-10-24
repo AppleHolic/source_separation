@@ -30,10 +30,11 @@ This repo used *Balanced train label dataset* (Label balanced, non-human classes
 It's not official implementation by authors of paper.
 
 
-#### 2019.09 ~ 2019.10 updates
+### Recent Updates
 
-- Add singing voice separation with joint training on datasets
-  - Additional datasets : DSD100, MedleyDB V1 and V2
+*Now, add Singing Voice Separation with [DSD100](https://sigsep.github.io/datasets/dsd100.html) dataset!*
+This model is trained with larger model and higher sample rate (44.1k). So it gives more stable and high quality audio.
+Let's checkout [Youtube Playlist](https://www.youtube.com/playlist?list=PLQ4ukFz6Ieir5bZYOns08_2gMjt4hYP4I) with samples of my favorites!
 
 
 ### Dataset
@@ -45,12 +46,8 @@ You can use pre-defined preprocessing and dataset sources on https://github.com/
 
 ## List to be updated
 
-- [ ] A post that describes implementation details, samples, findings, pros and cons.
-- [ ] Inference with minimum dependency.
-- [ ] Add dynamic pitch augmentation
-- [ ] Reporting evaluations
-- [ ] Reducing dependencies.
-- [ ] Comments and docs with more plentiful information.
+- [x] Singing Voice Separation is going on finishing stage (2019.10)
+- [ ] Upload and share singing voice separation checkpoint.
 
 
 ## Environment
@@ -79,18 +76,29 @@ Explained it on above section. [link](https://github.com/AppleHolic/audioset_aug
 
 ## Pretrained Checkpoint
 
-- Model Name : refine_unet_base (see settings.py)
-- Link : [Google Drive](https://drive.google.com/open?id=1JRK-0RVV2o7cyRdvFuwe5iw84ESvfcyR)
-- Latest Tag : v0.0.0
+- General Voice Source Separation
+  - Model Name : refine_unet_base (see settings.py)
+  - Link : [Google Drive](https://drive.google.com/open?id=1JRK-0RVV2o7cyRdvFuwe5iw84ESvfcyR)
+  - Latest Tag : v0.0.0
+
+- Singing Voice Separation
+  - Model Name : refine_unet_larger
+  - Link : To be updated
+  - Latest Tag : v0.1.0
 
 
 ## Predicted Samples
 
-- Validation 10 random samples
-  - Link : [Google Drive](https://drive.google.com/open?id=1CafFnqWn_QvVPu2feNLn6pnjRYIa_rbP)
+- *General Voice Source Separation*
+  - Validation 10 random samples
+    - Link : [Google Drive](https://drive.google.com/open?id=1CafFnqWn_QvVPu2feNLn6pnjRYIa_rbP)
 
-- Test Samples : 
-  - Link : [Google Drive](https://drive.google.com/open?id=19Sn6pe5-BtWXYa6OiLbYGH7iCU-mzB8j) 
+  - Test Samples :
+    - Link : [Google Drive](https://drive.google.com/open?id=19Sn6pe5-BtWXYa6OiLbYGH7iCU-mzB8j)
+
+- *Singing Voice Seperation*
+  - Check out my youtube playlist !
+    - Link : [Youtube Playlist](https://www.youtube.com/playlist?list=PLQ4ukFz6Ieir5bZYOns08_2gMjt4hYP4I)
 
 
 ## Installation
@@ -101,7 +109,7 @@ Explained it on above section. [link](https://github.com/AppleHolic/audioset_aug
 
 ```
 $ pip install git+https://github.com/Appleholic/audioset_augmentor
-$ pip install git+https://github.com/Appleholic/pytorch_sound@v0.0.1
+$ pip install git+https://github.com/Appleholic/pytorch_sound@v0.0.3
 ```
 
 - Install package
@@ -118,7 +126,15 @@ $ pip install -e .
 $ python source_separation/train.py [YOUR_META_DIR] [SAVE_DIR] [MODEL NAME, see settings.py] [SAVE_PREFIX] [[OTHER OPTIONS...]]
 ```
 
+- Joint Train (Voice Bank and DSD100)
+
+```bash
+$ python source_separation/train_jointly.py [YOUR_VOICE_BANK_META_DIR] [YOUR_DSD100_META_DIR] [SAVE_DIR] [MODEL NAME, see settings.py] [SAVE_PREFIX] [[OTHER OPTIONS...]]
+```
+
+
 - Synthesize
+  - Be careful the differences sample rate between general case and singing voice case!
 
 Single sample
 
@@ -141,7 +157,7 @@ $ python source_separation/synthesize.py test-dir [INPUT_DIR] [OUTPUT_DIR] [MODE
 ```
 
 
-## Loss curves
+## Loss curves (General Sound Source Separation)
 
 ### Train
 

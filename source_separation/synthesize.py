@@ -5,13 +5,11 @@ import fire
 import torch
 import librosa
 import os
-import glob
+import source_separation
 
 from joblib import Parallel, delayed
 from pytorch_sound.data.dataset import SpeechDataLoader
 from torch.utils.data import Dataset, DataLoader
-
-import source_separation
 from tqdm import tqdm
 from pytorch_sound import settings
 from pytorch_sound.utils.commons import get_loadable_checkpoint
