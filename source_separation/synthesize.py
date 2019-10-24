@@ -1,10 +1,15 @@
+from pathlib import Path
+
 import numpy as np
 import fire
 import torch
 import librosa
 import os
-import glob
 import source_separation
+
+from joblib import Parallel, delayed
+from pytorch_sound.data.dataset import SpeechDataLoader
+from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 from pytorch_sound import settings
 from pytorch_sound.utils.commons import get_loadable_checkpoint
@@ -23,8 +28,10 @@ def __load_model(model_name: str, pretrained_path: str) -> torch.nn.Module:
     return model
 
 
-def run(audio_file: str, out_path: str, model_name: str, pretrained_path: str, lowpass_freq: int = 0):
-    wav, sr = librosa.load(audio_file, sr=settings.SAMPLE_RATE)
+def run(audio_file: str, out_path: str, model_name: str, pretrained_path: str, lowpass_freq: int = 0,
+        sample_rate: int = 22050):
+    print('Loading audio file...')
+    wav, sr = librosa.load(audio_file, sr=sample_rate)
     wav = preemphasis(wav)
 
     if wav.dtype != np.float32:
@@ -46,7 +53,7 @@ def run(audio_file: str, out_path: str, model_name: str, pretrained_path: str, l
         out_wav = lowpass(out_wav, frequency=lowpass_freq)
 
     # save wav
-    librosa.output.write_wav(out_path, inv_preemphasis(out_wav).clip(-1., 1.), settings.SAMPLE_RATE)
+    librosa.output.write_wav(out_path, inv_preemphasis(out_wav).clip(-1., 1.), sample_rate)
 
     print('Finish !')
 
@@ -97,50 +104,77 @@ def validate(meta_dir: str, out_dir: str, model_name: str, pretrained_path: str,
     print('Finish !')
 
 
-def test_dir(in_dir: str, out_dir: str, model_name: str, pretrained_path: str):
+def test_worker(out_wav, file_path, in_dir, out_dir, sample_rate, wav_len):
+    try:
+        if wav_len == 1:
+            return
+        # make output path
+        sub_dir = os.path.dirname(file_path).replace(in_dir, '')
+        file_out_dir = os.path.join(out_dir, sub_dir)
+        os.makedirs(file_out_dir, exist_ok=True)
+        out_file_path = os.path.join(file_out_dir, os.path.basename(file_path))
+        out_wav = out_wav[:wav_len]
+        out_wav = inv_preemphasis(out_wav.squeeze())
+        librosa.output.write_wav(out_file_path, out_wav, sample_rate)
+    except Exception:
+        print(f'{file_path} has an error')
 
-    # listup files
-    print('List up wave files in given directory ...')
-    file_list = glob.glob(os.path.join(in_dir, '*.wav'))
 
-    # load model
+class WaveDataset(Dataset):
+
+    def __init__(self, wav_list, sample_rate, max_len):
+        self.wav_list = wav_list
+        self.sample_rate = sample_rate
+        self.max_len = max_len
+
+    def __getitem__(self, idx):
+        wav = librosa.load(self.wav_list[idx], sr=self.sample_rate)[0].squeeze()
+        if len(wav) > self.sample_rate * self.max_len:
+            wav = np.zeros(1)
+        return [preemphasis(wav), np.array([len(wav)])]
+
+    def __len__(self):
+        return len(self.wav_list)
+
+
+def test_dir(in_dir: str, out_dir: str, model_name: str, pretrained_path: str, sample_rate: int = 22050,
+             num_workers: int = 1, batch_size: int = 64, max_len: float = 20.):
+    # lookup files
+    print('Lookup wave files ...')
+    wav_list = list(map(str, Path(in_dir).glob('**/*.wav')))
+
+    # load models
     model = __load_model(model_name, pretrained_path)
+
+    if torch.cuda.device_count() > 1:
+        model = torch.nn.DataParallel(model)
+
+    # dataloader
+    dataset = WaveDataset(wav_list, sample_rate, max_len)
+    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False,
+                             num_workers=num_workers, collate_fn=SpeechDataLoader.pad_collate_fn)
 
     # mkdir
     os.makedirs(out_dir, exist_ok=True)
 
-    # loop all
-    print('Process files ...')
-    noise_all = []
-    results = []
+    with Parallel(n_jobs=num_workers) as parallel:
 
-    # TODO: Convert it to batch mode
-    for file_path in tqdm(file_list):
-        # load wave
-        origin_wav, _ = librosa.load(file_path, sr=settings.SAMPLE_RATE)
+        for dp, batch_idx in tqdm(zip(data_loader, range(0, len(wav_list), batch_size))):
+            batch_wav = dp[0].cuda()
+            lens = dp[1].numpy()
 
-        # default, preemp
-        wav = preemphasis(origin_wav)
+            with torch.no_grad():
+                batch_clean_hat = model(batch_wav)
 
-        # wave to cuda tensor
-        wav = torch.FloatTensor(wav).unsqueeze(0).cuda()
+            batch_clean_hat = batch_clean_hat.cpu().numpy()
 
-        # inference
-        with torch.no_grad():
-            clean_hat = model(wav)
+            zipping_list = zip(batch_clean_hat, wav_list[batch_idx:batch_idx + batch_size], lens)
 
-        noise_all.append(origin_wav)
-        results.append(clean_hat.squeeze())
-
-    # write all
-    print('Write all result into {} ...'.format(out_dir))
-    for file_path, clean_hat, noise in zip(file_list, results, noise_all):
-        file_name = os.path.basename(file_path).split('.')[0]
-        noise_out_path = os.path.join(out_dir, '{}_noise.wav'.format(file_name))
-        clean_out_path = os.path.join(out_dir, '{}_pred.wav'.format(file_name))
-
-        librosa.output.write_wav(noise_out_path, noise, settings.SAMPLE_RATE)
-        librosa.output.write_wav(clean_out_path, inv_preemphasis(clean_hat.cpu().numpy()), settings.SAMPLE_RATE)
+            parallel(
+                delayed(test_worker)
+                (out_wav, file_path, in_dir, out_dir, sample_rate, int(l))
+                for out_wav, file_path, l in zipping_list
+            )
 
     print('Finish !')
 
