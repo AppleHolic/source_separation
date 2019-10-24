@@ -14,7 +14,7 @@ from source_separation.trainer import Wave2WaveTrainer, LossMixingTrainer
 
 
 def main(meta_dir: str, save_dir: str,
-         save_prefix: str = '', pretrained_path: str = '',
+         save_prefix: str, pretrained_path: str = '',
          model_name: str = 'refine_unet_base', batch_size: int = 128, num_workers: int = 16, fix_len: float = 2.,
          lr: float = 5e-4, betas: Tuple[float] = (0.5, 0.9), weight_decay: float = 0.0,
          max_step: int = 200000, valid_max_step: int = 30, save_interval: int = 1000, log_interval: int = 50,
