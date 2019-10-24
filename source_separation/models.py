@@ -188,9 +188,10 @@ class RefineSpectrogramUnet(SpectrogramUnet):
 
     def __init__(self, spec_dim: int, hidden_dim: int, filter_len: int, hop_len: int, layers: int = 4,
                  block_layers: int = 4, kernel_size: int = 3, is_mask: bool = True, norm: str = 'ins',
-                 act: str = 'comp', refine_layers: int = 1):
+                 act: str = 'comp', refine_layers: int = 1, add_spec_results: bool = False):
         super().__init__(spec_dim, hidden_dim, filter_len, hop_len, layers, block_layers,
                          kernel_size, is_mask, norm, act)
+        self.add_spec_results = add_spec_results
         # refine conv
         self.refine_conv = nn.ModuleList([
             nn.Sequential(
@@ -242,5 +243,8 @@ class RefineSpectrogramUnet(SpectrogramUnet):
 
         out = self.exp_istft(mag, phase)
         out = self.adjust_diff(out, wav)
+
+        if self.add_spec_results:
+            out = (out, mag, phase)
 
         return out

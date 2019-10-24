@@ -145,11 +145,11 @@ $ python source_separation/synthesize.py test-dir [INPUT_DIR] [OUTPUT_DIR] [MODE
 
 ### Train
 
-![Train L1 Loss curve](./assets/imgs/train_curve_wsrd.png)
+![Train L1 Loss curve](./assets/imgs/train_curve_wsdr.png)
 
 ### Valid
 
-![Valid L1 Loss curve](./assets/imgs/valid_curve_wsrd.png)
+![Valid L1 Loss curve](./assets/imgs/valid_curve_wsdr.png)
 
 
 ## License
