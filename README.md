@@ -47,7 +47,8 @@ You can use pre-defined preprocessing and dataset sources on https://github.com/
 ## List to be updated
 
 - [x] Singing Voice Separation is going on finishing stage (2019.10)
-- [ ] Upload and share singing voice separation checkpoint.
+- [x] Upload and share singing voice separation checkpoint.
+- [ ] Enhance codes for inference
 
 
 ## Environment
@@ -79,12 +80,12 @@ Explained it on above section. [link](https://github.com/AppleHolic/audioset_aug
 - General Voice Source Separation
   - Model Name : refine_unet_base (see settings.py)
   - Link : [Google Drive](https://drive.google.com/open?id=1JRK-0RVV2o7cyRdvFuwe5iw84ESvfcyR)
-  - Latest Tag : v0.0.0
+  - Available Tag : v0.1.0
 
 - Singing Voice Separation
   - Model Name : refine_unet_larger
-  - Link : To be updated
-  - Latest Tag : v0.1.0
+  - Link : [Google Drive](https://drive.google.com/open?id=1ywgFZ7ms7CmiCCv2MikrKx9g-2j9kd-I)
+  - Available Tag : v0.1.0
 
 
 ## Predicted Samples
@@ -135,6 +136,8 @@ $ python source_separation/train_jointly.py [YOUR_VOICE_BANK_META_DIR] [YOUR_DSD
 
 - Synthesize
   - Be careful the differences sample rate between general case and singing voice case!
+  - If you run more than one, it can help to get better result.
+    - Sapmles of singing voice separation are ran twice.
 
 Single sample
 
