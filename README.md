@@ -16,21 +16,28 @@ The latest model in this repository is basically built with spectrogram based mo
 In mainly, [Phase-aware Speech Enhancement with Deep Complex U-Net](https://arxiv.org/abs/1903.03107) are implemented with modifications.
 - Complex Convolution, Masking, Weighted SDR Loss
 
-
 And then, To more stable inferences in real cases, below things are adopted.
-
-- Audioset data is used to augment noises.
-
-Dataset source is opened on [audioset_augmentor](https://github.com/AppleHolic/audioset_augmentor).
-See this [link](https://research.google.com/audioset/download.html) for finding explanations about audioset.
-This repo used *Balanced train label dataset* (Label balanced, non-human classes, 18055 samples)
 
 - Preemphasis is used to remove high-frequency noises on adapting real samples.
 
 It's not official implementation by authors of paper.
 
+*Deprecate audioset augmentation*
+
 
 ### Recent Updates
+
+#### Report about audioset augmentation
+
+After releasing public repo, I found a bug on augmentation on that trained model that did not trained with audioset.
+So I recently did retry to train model and get slightly different result.
+
+*Initial samples and model are voicebank only version.*
+
+When audioset is roughly used for augmentation on source separation, It has *degrading quality* general and music on this case.
+
+
+#### Singing Voice Separation
 
 *Now, add Singing Voice Separation with [DSD100](https://sigsep.github.io/datasets/dsd100.html) dataset!*
 This model is trained with larger model and higher sample rate (44.1k). So it gives more stable and high quality audio.
@@ -39,15 +46,12 @@ Let's checkout [Youtube Playlist](https://www.youtube.com/playlist?list=PLQ4ukFz
 
 ### Dataset
 
-[Voice Bank](https://datashare.is.ed.ac.uk/handle/10283/1942) and Audioset (see above section)
-
 You can use pre-defined preprocessing and dataset sources on https://github.com/Appleholic/pytorch_sound
 
 
 ## List to be updated
 
-- [x] Singing Voice Separation is going on finishing stage (2019.10)
-- [x] Upload and share singing voice separation checkpoint.
+- [ ] Add MUSDB and evaluate results
 - [ ] Enhance codes for inference
 
 
@@ -69,10 +73,6 @@ They are two external repositories on this repository.
 It is built with using [pytorch_sound](https://github.com/AppleHolic/pytorch_sound).
 So that, *pytorch_sound* is a modeling toolkit that allows engineers to train custom models for sound related tasks.
 Many of sources in this repository are based on pytorch_sound template.
-
-- audioset_augmentor
-
-Explained it on above section. [link](https://github.com/AppleHolic/audioset_augmentor)
 
 
 ## Pretrained Checkpoint
@@ -106,10 +106,9 @@ Explained it on above section. [link](https://github.com/AppleHolic/audioset_aug
 
 - Install above external repos
 
-> You should see first README.md of audioset_augmentor and pytorch_sound, to prepare dataset and to train separation models.
+> You should see first README.md of pytorch_sound, to prepare dataset and to train separation models.
 
 ```
-$ pip install git+https://github.com/Appleholic/audioset_augmentor
 $ pip install git+https://github.com/Appleholic/pytorch_sound@v0.0.3
 ```
 
@@ -174,20 +173,3 @@ $ python source_separation/synthesize.py test-dir [INPUT_DIR] [OUTPUT_DIR] [MODE
 ## License
 
 This repository is developed by [ILJI CHOI](https://github.com/Appleholic).  It is distributed under Apache License 2.0.
-
-
-## Citation
-
-If you use this repository for research, please cite:
-
-```bibtex
-@misc{specunet-audioset,
-  author = {Choi, Ilji},
-  title = {Spectrogram U-net for Source Separation with Audioset Samples},
-  year = {2019},
-  publisher = {GitHub},
-  journal = {GitHub repository},
-  howpublished = {\url{https://github.com/Appleholic/source_separation}}
-}
-```
-
