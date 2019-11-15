@@ -16,7 +16,7 @@ def main(vb_meta_dir: str, dsd_meta_dir: str, save_dir: str, save_prefix: str, p
          lr: float = 5e-4, betas: Tuple[float] = (0.5, 0.9), weight_decay: float = 0.0,
          max_step: int = 200000, valid_max_step: int = 50, save_interval: int = 1000, log_interval: int = 50,
          grad_clip: float = 0.0, grad_norm: float = 30.0,
-         is_augment: bool = True, milestones: Tuple[int] = None, gamma: float = 0.1, sample_rate: int = 44100,
+         milestones: Tuple[int] = None, gamma: float = 0.1, sample_rate: int = 44100,
          mix_loss: bool = False):
 
     # create model
@@ -41,7 +41,7 @@ def main(vb_meta_dir: str, dsd_meta_dir: str, save_dir: str, save_prefix: str, p
 
     train_loader, valid_loader = get_concated_datasets(
         meta_dir_list, batch_size=batch_size, num_workers=num_workers, meta_cls_list=meta_cls_list,
-        is_audioset=is_augment, fix_len=int(fix_len * sample_rate), audio_mask=True
+        fix_len=int(fix_len * sample_rate), audio_mask=True
     )
 
     if mix_loss:
