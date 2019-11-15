@@ -27,10 +27,10 @@ It's not official implementation by authors of paper.
 
 ### Recent Updates
 
-#### Report about audioset augmentation
+#### Notice deprecation and report issue about voicebank pretrained model with audioset
 
 After releasing public repo, I found a bug on augmentation on that trained model that did not trained with audioset.
-So I recently did retry to train model and get slightly different result.
+Then, I recently did retry to train model and get slightly different result.
 
 *Initial samples and model are voicebank only version.*
 
@@ -51,7 +51,7 @@ You can use pre-defined preprocessing and dataset sources on https://github.com/
 
 ## List to be updated
 
-- [ ] Add MUSDB and evaluate results
+- [ ] Add MUSDB and evaluate results (issue-9)
 - [ ] Enhance codes for inference
 
 
@@ -159,15 +159,31 @@ $ python source_separation/synthesize.py test-dir [INPUT_DIR] [OUTPUT_DIR] [MODE
 ```
 
 
-## Loss curves (General Sound Source Separation)
+## Experiments
 
-### Train
+- Reproduce experiments
+  - General Voice Separation
+    - single train code
+    - Pretrained checkpoint is trained on default options / max_step 100000
 
-![Train L1 Loss curve](./assets/imgs/train_curve_wsdr.png)
+  - Singing Voice Separation
+    - joint train code
+    - Pretrained checkpoint is trained on 4 GPUs, double (256) batch size.
 
-### Valid
+  - Above options will be changed with curriculum learning and the other tries.
 
-![Valid L1 Loss curve](./assets/imgs/valid_curve_wsdr.png)
+- Parameters and settings :
+  It is tuned to find out good validation WSDR loss
+  - refine_unet_base : 75M
+  - refine_unet_larger : 95M
+
+- Evaluation
+  - To be filled with issue-9
+
+
+## Loss curves
+
+- Report again after curriculum learning.
 
 
 ## License
