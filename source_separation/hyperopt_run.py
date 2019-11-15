@@ -17,7 +17,7 @@ def main(args: Dict[str, Any]):
     return _main(save_prefix=save_prefix, **args)
 
 
-def _main(meta_dir: str = '/data/public/rw/datasets/source_separation/dsd100/DSD100/meta',
+def _main(meta_dir: str,
           save_prefix: str = '',
           model_name: str = 'refine_unet_base',   # or refine_spectrogram_unet
           save_dir: str = 'savedir', batch_size: int = 128, num_workers: int = 16, fix_len: float = 2.,
@@ -68,7 +68,6 @@ def _main(meta_dir: str = '/data/public/rw/datasets/source_separation/dsd100/DSD
         if is_augment:
             dataset_func = get_datasets
             meta_cls = DSD100Meta
-            is_audioset = False
         else:
             dataset_func = dsd100.get_datasets
     else:
@@ -77,12 +76,11 @@ def _main(meta_dir: str = '/data/public/rw/datasets/source_separation/dsd100/DSD
         if is_augment:
             dataset_func = get_datasets
             meta_cls = VoiceBankMeta
-            is_audioset = True
         else:
             dataset_func = voice_bank.get_datasets
 
     train_loader, valid_loader = dataset_func(
-        meta_dir, batch_size=batch_size, num_workers=num_workers, meta_cls=meta_cls, is_audioset=is_audioset,
+        meta_dir, batch_size=batch_size, num_workers=num_workers, meta_cls=meta_cls,
         fix_len=int(fix_len * sr), audio_mask=True
     )
 
