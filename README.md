@@ -22,19 +22,17 @@ And then, To more stable inferences in real cases, below things are adopted.
 
 It's not official implementation by authors of paper.
 
-*Deprecate audioset augmentation*
-
 
 ### Recent Updates
 
 #### Notice deprecation and report issue about voicebank pretrained model with audioset
 
+##### It's under review in detail. I'm checking out codes for reproducing experiments, after then, below comments can be fixed.
+
 After releasing public repo, I found a bug on augmentation on that trained model that did not trained with audioset.
 Then, I recently did retry to train model and get slightly different result.
 
-*Initial samples and model are voicebank only version.*
-
-When audioset is roughly used for augmentation on source separation, It has *degrading quality* general and music on this case.
+- (Checking) Initial samples and model are voicebank only version.
 
 
 #### Singing Voice Separation
