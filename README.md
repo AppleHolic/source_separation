@@ -36,6 +36,13 @@ Singing Voice Separation with [DSD100](https://sigsep.github.io/datasets/dsd100.
 This model is trained with larger model and higher sample rate (44.1k). So it gives more stable and high quality audio.
 Let's checkout [Youtube Playlist](https://www.youtube.com/playlist?list=PLQ4ukFz6Ieir5bZYOns08_2gMjt4hYP4I) with samples of my favorites!
 
+#### Recent Updates
+
+- Remove deprecation of audioset augmentation.
+> It can have problem on preprocessing(audioset, filter failed downloading file) time, after check out, this line will be removed.
+
+- Update next version of Voice Bank cases (200k training steps).
+
 
 ### Dataset
 
@@ -82,13 +89,12 @@ For evaluation, PESQ python wrapper repository is added.
 - General Voice Source Separation
   - Model Name : refine_unet_base (see settings.py)
   - Link : [Google Drive](https://drive.google.com/open?id=1JRK-0RVV2o7cyRdvFuwe5iw84ESvfcyR)
-  - Available Tag : v0.1.0
 
 - Singing Voice Separation
   - Model Name : refine_unet_larger
   - Link : [Google Drive](https://drive.google.com/open?id=1ywgFZ7ms7CmiCCv2MikrKx9g-2j9kd-I)
-  - Available Tag : v0.1.0
 
+- Current Tag : v0.1.1
 
 ## Predicted Samples
 
@@ -140,7 +146,7 @@ $ python source_separation/train_jointly.py [YOUR_VOICE_BANK_META_DIR] [YOUR_DSD
 - Synthesize
   - Be careful the differences sample rate between general case and singing voice case!
   - If you run more than one, it can help to get better result.
-    - Sapmles of singing voice separation are ran twice.
+    - Sapmles (voice bank, dsd) are ran twice.
 
 Single sample
 
