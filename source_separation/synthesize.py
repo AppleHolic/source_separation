@@ -11,12 +11,14 @@ from joblib import Parallel, delayed
 from pytorch_sound.data.dataset import SpeechDataLoader
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
+from pypesq import pypesq
 from pytorch_sound import settings
 from pytorch_sound.utils.commons import get_loadable_checkpoint
 from pytorch_sound.models import build_model
 from pytorch_sound.utils.sound import lowpass, inv_preemphasis, preemphasis
 from pytorch_sound.models.sound import PreEmphasis
-from pytorch_sound.data.meta import voice_bank
+from pytorch_sound.data.meta import voice_bank, dsd100
+from pytorch_sound.utils.sound import preemphasis
 
 
 def __load_model(model_name: str, pretrained_path: str) -> torch.nn.Module:
@@ -58,8 +60,19 @@ def run(audio_file: str, out_path: str, model_name: str, pretrained_path: str, l
     print('Finish !')
 
 
-def validate(meta_dir: str, out_dir: str, model_name: str, pretrained_path: str, batch_size: int = 64,
-             num_workers: int = 16,):
+def validate(meta_dir: str, model_name: str, pretrained_path: str, out_dir: str = '',
+             batch_size: int = 64, num_workers: int = 16, sr: int = 22050):
+    """
+    Evaluation on validation dataset. It calculates PESQ. If you wanna get validation audio files, put out_dir.
+    :param meta_dir: voice bank meta directory
+    :param model_name: model name
+    :param pretrained_path: pretrained checkpoint file path
+    :param out_dir: output directory
+    :param batch_size: batch size for evaluating datasets
+    :param num_workers: workers of data loader
+    :param sr: training sample rate
+    """
+
     preemp = PreEmphasis().cuda()
 
     # load model
@@ -67,41 +80,63 @@ def validate(meta_dir: str, out_dir: str, model_name: str, pretrained_path: str,
 
     # load validation data loader
     _, valid_loader = voice_bank.get_datasets(
-        meta_dir, batch_size=batch_size, num_workers=num_workers, fix_len=None, audio_mask=True
+        meta_dir, batch_size=batch_size, num_workers=num_workers, fix_len=0, audio_mask=True
     )
 
-    # mkdir
-    os.makedirs(out_dir, exist_ok=True)
-
     # loop all
-    print('Process Validation Dataset ...')
-    noise_all = []
-    clean_all = []
-    results = []
-    for noise, clean, *others in tqdm(valid_loader):
+    print('Process Validation Dataset (with PESQ) ...')
+    pesq_score = 0.
+    count = 0
+
+    if out_dir:
+        noise_all = []
+        clean_all = []
+        results = []
+
+    for noise, clean, *others in tqdm(valid_loader, desc='validate'):
         noise = noise.cuda()
         noise = preemp(noise.unsqueeze(1)).squeeze(1)
         with torch.no_grad():
             clean_hat = model(noise)
-        noise_all.append(noise)
-        clean_all.append(clean)
-        results.append(clean_hat)
 
-    # write all
-    print('Write all result into {} ...'.format(out_dir))
-    for idx, (batch_clean_hat, batch_noise, batch_clean) in tqdm(enumerate(zip(results, noise_all, clean_all))):
-        for in_idx, (clean_hat, noise, clean) in enumerate(zip(batch_clean_hat, batch_noise, batch_clean)):
-            noise_out_path = os.path.join(out_dir, '{}_noise.wav'.format(idx * batch_size + in_idx))
-            pred_out_path = os.path.join(out_dir, '{}_pred.wav'.format(idx * batch_size + in_idx))
-            clean_out_path = os.path.join(out_dir, '{}_clean.wav'.format(idx * batch_size + in_idx))
+        clean = clean.cpu().numpy()
+        clean_hat = clean_hat.cpu().numpy()
 
-            librosa.output.write_wav(clean_out_path, clean.cpu().numpy(), settings.SAMPLE_RATE)
-            librosa.output.write_wav(noise_out_path,
-                                     inv_preemphasis(noise.cpu().numpy()), settings.SAMPLE_RATE)
-            librosa.output.write_wav(pred_out_path,
-                                     inv_preemphasis(clean_hat.cpu().numpy()).clip(-1., 1.), settings.SAMPLE_RATE)
+        # calculate
+        for clean_sample, clean_hat_sample in zip(clean, clean_hat):
+            # resample
+            clean_sample = librosa.core.resample(clean_sample, sr, 16000)
+            clean_hat_sample = librosa.core.resample(clean_hat_sample, sr, 16000)
 
-    print('Finish !')
+            item_score = pypesq(16000, clean_sample, inv_preemphasis(clean_hat_sample).clip(-1., 1.), 'wb')
+            pesq_score += item_score
+            count += 1
+
+        if out_dir:
+            noise_all.append(noise.cpu().numpy())
+            clean_all.append(clean)
+            results.append(clean_hat)
+
+    print(f'PESQ Score : {pesq_score / count}')
+
+    if out_dir:
+        # mkdir
+        os.makedirs(out_dir, exist_ok=True)
+        # write all
+        print('Write all result into {} ...'.format(out_dir))
+        for idx, (batch_clean_hat, batch_noise, batch_clean) in tqdm(enumerate(zip(results, noise_all, clean_all))):
+            for in_idx, (clean_hat, noise, clean) in enumerate(zip(batch_clean_hat, batch_noise, batch_clean)):
+                noise_out_path = os.path.join(out_dir, '{}_noise.wav'.format(idx * batch_size + in_idx))
+                pred_out_path = os.path.join(out_dir, '{}_pred.wav'.format(idx * batch_size + in_idx))
+                clean_out_path = os.path.join(out_dir, '{}_clean.wav'.format(idx * batch_size + in_idx))
+
+                librosa.output.write_wav(clean_out_path, clean, settings.SAMPLE_RATE)
+                librosa.output.write_wav(noise_out_path,
+                                         inv_preemphasis(noise), settings.SAMPLE_RATE)
+                librosa.output.write_wav(pred_out_path,
+                                         inv_preemphasis(clean_hat).clip(-1., 1.), settings.SAMPLE_RATE)
+
+        print('Finish writing files.')
 
 
 def test_worker(out_wav, file_path, in_dir, out_dir, sample_rate, wav_len):
