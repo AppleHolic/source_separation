@@ -3,9 +3,7 @@ import os
 import torch
 import torch.nn as nn
 from typing import Tuple
-from pytorch_sound.data.meta import voice_bank, dsd100
-from pytorch_sound.data.meta.dsd100 import DSD100Meta
-from pytorch_sound.data.meta.voice_bank import VoiceBankMeta
+from pytorch_sound.data.meta import voice_bank, dsd100, musdb18
 from pytorch_sound.models import build_model
 from torch.optim.lr_scheduler import MultiStepLR
 
@@ -20,7 +18,7 @@ def main(meta_dir: str, save_dir: str,
          max_step: int = 200000, valid_max_step: int = 30, save_interval: int = 1000, log_interval: int = 50,
          grad_clip: float = 0.0, grad_norm: float = 30.0,
          is_augment: bool = True, milestones: Tuple[int] = None, gamma: float = 0.1,
-         is_dsd: bool = False, mix_loss: bool = False):
+         case_name: str = 'voice_bank', mix_loss: bool = False):
 
     # check args
     assert os.path.exists(meta_dir)
@@ -40,28 +38,8 @@ def main(meta_dir: str, save_dir: str,
     else:
         scheduler = None
 
-    # adopt dsd100 case
-    if is_dsd:
-        sr = 44100
-        if is_augment:
-            dataset_func = get_datasets
-            meta_cls = DSD100Meta
-        else:
-            dataset_func = dsd100.get_datasets
-    else:
-        sr = 22050
-        # load dataset
-        if is_augment:
-            dataset_func = get_datasets
-            meta_cls = VoiceBankMeta
-        else:
-            dataset_func = voice_bank.get_datasets
-
-    # Deprecate audioset option
-    train_loader, valid_loader = dataset_func(
-        meta_dir, batch_size=batch_size, num_workers=num_workers, meta_cls=meta_cls,
-        fix_len=int(fix_len * sr), audio_mask=True
-    )
+    # handle cases
+    train_loader, valid_loader, sr = handle_cases(case_name, is_augment, meta_dir, batch_size, num_workers, fix_len)
 
     if mix_loss:
         trainer = LossMixingTrainer
@@ -76,6 +54,44 @@ def main(meta_dir: str, save_dir: str,
         save_dir=save_dir, save_prefix=save_prefix, grad_clip=grad_clip, grad_norm=grad_norm,
         pretrained_path=pretrained_path, scheduler=scheduler, sr=sr
     ).run()
+
+
+def handle_cases(case_name: str, is_augment: bool, meta_dir: str, batch_size: int, num_workers: int, fix_len: int):
+    assert case_name in ['voice_bank', 'musdb18', 'dsd100'], \
+        f'{case_name} is not implemented ! choose one in [\'voice_bank\', \'musdb18\', \'dsd100\']'
+
+    sr = 44100
+    if is_augment:
+        is_audioset = False
+        if case_name == 'dsd100':
+            dataset_func = get_datasets
+            meta_cls = dsd100.DSD100Meta
+        elif case_name == 'musdb18':
+            dataset_func = get_datasets
+            meta_cls = musdb18.MUSDB18Meta
+        elif case_name == 'voice_bank':
+            sr = 22050
+            dataset_func = get_datasets
+            meta_cls = voice_bank.VoiceBankMeta
+            is_audioset = True
+
+        train_loader, valid_loader = dataset_func(
+            meta_dir, batch_size=batch_size, num_workers=num_workers, meta_cls=meta_cls,
+            fix_len=int(fix_len * sr), audio_mask=True, is_audioset=is_audioset
+        )
+    else:
+        if case_name == 'dsd100':
+            dataset_func = dsd100.get_datasets
+        elif case_name == 'musdb18':
+            dataset_func = musdb18.get_datasets
+        elif case_name == 'voice_bank':
+            dataset_func = voice_bank.get_datasets
+            sr = 22050
+        train_loader, valid_loader = dataset_func(
+            meta_dir, batch_size=batch_size, num_workers=num_workers, fix_len=int(fix_len * sr), audio_mask=True
+        )
+
+    return train_loader, valid_loader, sr
 
 
 if __name__ == '__main__':
