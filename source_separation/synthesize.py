@@ -11,7 +11,7 @@ from joblib import Parallel, delayed
 from pytorch_sound.data.dataset import SpeechDataLoader
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
-from pypesq import pypesq
+from pesq import pesq
 from pytorch_sound import settings
 from pytorch_sound.utils.commons import get_loadable_checkpoint
 from pytorch_sound.models import build_model
@@ -108,7 +108,7 @@ def validate(meta_dir: str, model_name: str, pretrained_path: str, out_dir: str 
             clean_sample = librosa.core.resample(clean_sample, sr, 16000)
             clean_hat_sample = librosa.core.resample(clean_hat_sample, sr, 16000)
 
-            item_score = pypesq(16000, clean_sample, inv_preemphasis(clean_hat_sample).clip(-1., 1.), 'wb')
+            item_score = pesq(16000, clean_sample, inv_preemphasis(clean_hat_sample).clip(-1., 1.), 'wb')
             pesq_score += item_score
             count += 1
 
