@@ -1,7 +1,7 @@
 # Source Separation
 
 [![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/) [![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FAppleholic%2Fsource_separation)](https://hits.seeyoufarm.com)
-[![Open Synthesis Example In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Appleholic/source_separation/blob/issue-19-colab/assets/Source_Separation_first_notebook.ipynb)
+[![Synthesis Example On Colab Notebook](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Appleholic/source_separation/blob/master/assets/Source_Separation_first_notebook.ipynb)
 ---
 
 
@@ -38,21 +38,12 @@ Let's checkout [Youtube Playlist](https://www.youtube.com/playlist?list=PLQ4ukFz
 
 #### Recent Updates
 
-- Remove deprecation of audioset augmentation.
-> It can have problem on preprocessing(audioset, filter failed downloading file) time, after check out, this line will be removed.
-
-- Update next version of Voice Bank cases (200k training steps).
+- Add Synthesis Colab Notebook Example. You can check out this on the badge or [here](https://colab.research.google.com/github/Appleholic/source_separation/blob/master/assets/Source_Separation_first_notebook.ipynb).
 
 
 ### Dataset
 
 You can use pre-defined preprocessing and dataset sources on https://github.com/Appleholic/pytorch_sound
-
-
-## List to be updated
-
-- [ ] Add MUSDB and evaluate results (issue-9)
-- [ ] Enhance codes for inference
 
 
 ## Environment
